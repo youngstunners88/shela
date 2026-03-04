@@ -1,0 +1,70 @@
+{
+  "delivery": {
+    "south_africa": [
+      {
+        "name": "Uber Eats",
+        "urls": ["https://www.ubereats.com/za"],
+        "monitor": ["pricing", "promotions", "delivery_fees", "surge_patterns"],
+        "priority": "high"
+      },
+      {
+        "name": "Bolt Food",
+        "urls": ["https://food.bolt.eu/za"],
+        "monitor": ["pricing", "surge_patterns", "promotions"],
+        "priority": "high"
+      },
+      {
+        "name": "Mr D",
+        "urls": ["https://www.mrdelivery.co.za", "https://www.mrdfood.co.za"],
+        "monitor": ["pricing", "promotions", "delivery_time"],
+        "priority": "high"
+      },
+      {
+        "name": "Checkers Sixty60",
+        "urls": ["https://www.checkers.co.za/sixty60"],
+        "monitor": ["pricing", "delivery_time", "grocery_pricing"],
+        "priority": "medium"
+      },
+      {
+        "name": "Woolies Dash",
+        "urls": ["https://www.woolworths.co.za/dash"],
+        "monitor": ["pricing", "delivery_time"],
+        "priority": "medium"
+      },
+      {
+        "name": "Pick n Pay asap!",
+        "urls": ["https://www.pnp.co.za"],
+        "monitor": ["pricing", "delivery_time"],
+        "priority": "medium"
+      }
+    ]
+  },
+  "taxi": {
+    "south_africa": [
+      {
+        "name": "Uber",
+        "urls": ["https://www.uber.com/za"],
+        "monitor": ["pricing", "surge", "features", "promotions"],
+        "priority": "high"
+      },
+      {
+        "name": "Bolt",
+        "urls": ["https://www.bolt.com/za"],
+        "monitor": ["pricing", "surge", "promotions"],
+        "priority": "high"
+      },
+      {
+        "name": "inDriver",
+        "urls": ["https://indriver.com/za"],
+        "monitor": ["pricing_model", "features", "bid_system"],
+        "priority": "medium"
+      },
+      {
+        "name": "Taxify",
+        "urls": ["https://taxify.eu"],
+        "monitor": ["pricing", "features"],
+        "priority": "low"
+      }
+    ]
+  }
+}

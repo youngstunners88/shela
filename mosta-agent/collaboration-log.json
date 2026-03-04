@@ -1,0 +1,299 @@
+[
+  {
+    "timestamp": "2026-03-04T04:25:00+02:00",
+    "status": "04:25 SAST, 26 assets logged; last action 01:15 SAST image 'Labs it! iHhashi got us!' (video blocked by plan limit).",
+    "recentContent": [
+      {
+        "time": "2026-03-04T01:15:00+02:00",
+        "hook": "Labs it! iHhashi got us!",
+        "language": "English + Slang",
+        "type": "image-only"
+      },
+      {
+        "time": "2026-03-03T23:15:00+02:00",
+        "hook": "POV: It's 11pm, you forgot to cook...",
+        "language": "Mixed (Evening)",
+        "type": "image-only"
+      },
+      {
+        "time": "2026-03-03T21:15:00+02:00",
+        "hook": "When the squad says let's grab food but nobody wants to go out",
+        "language": "Mixed (Evening)",
+        "type": "image-only"
+      }
+    ],
+    "insights": "Video generation still hitting the plan cap, so I'm shipping image-first hooks; monitor whether engagement stays on par with the previous image+video packages.",
+    "questions": "Do you want me to keep leaning late-night English/slang hooks or pivot toward midday/afternoon content? Also, can we bump the plan so video resumes?",
+    "nextCycleHours": 1
+  },
+  {
+    "timestamp": "2026-03-04T04:40:00+02:00",
+    "status": "04:40 SAST, 26 assets logged; last action 01:15 SAST image 'Labs it! iHhashi got us!' (video creation still blocked by plan limit).",
+    "recentContent": [
+      {
+        "time": "2026-03-04T01:15:00+02:00",
+        "hook": "Labs it! iHhashi got us!",
+        "language": "English + Slang (Night)",
+        "type": "image-only"
+      },
+      {
+        "time": "2026-03-03T23:15:00+02:00",
+        "hook": "POV: It's 11pm, you forgot to cook...",
+        "language": "Mixed (Evening)",
+        "type": "image-only"
+      },
+      {
+        "time": "2026-03-03T21:15:00+02:00",
+        "hook": "When the squad says let's grab food but nobody wants to go out",
+        "language": "Mixed (Evening)",
+        "type": "image-only"
+      }
+    ],
+    "insights": "No fresh metrics yet; video creation still capped by the plan, so I'm delivering image-first hooks until we have the budget or limit reset.",
+    "questions": "Should I continue focusing on late-night English/slang hooks, or do you want a midday/lunch pivot? Also, any word on unlocking the video plan?",
+    "nextCycleHours": 1
+  },
+  {
+    "timestamp": "2026-03-04T05:15:00+02:00",
+    "status": "05:15 SAST, 26 assets logged; last action 01:15 SAST image 'Labs it! iHhashi got us!' (video creation blocked by plan limit).",
+    "recentContent": [
+      {
+        "time": "2026-03-04T01:15:00+02:00",
+        "hook": "Labs it! iHhashi got us!",
+        "language": "English + Slang (Night)",
+        "type": "image-only"
+      },
+      {
+        "time": "2026-03-03T23:15:00+02:00",
+        "hook": "POV: It's 11pm, you forgot to cook...",
+        "language": "Mixed (Evening)",
+        "type": "image-only"
+      },
+      {
+        "time": "2026-03-03T21:15:00+02:00",
+        "hook": "When the squad says let's grab food but nobody wants to go out",
+        "language": "Mixed (Evening)",
+        "type": "image-only"
+      }
+    ],
+    "insights": "Video generation still blocked by plan limits. Images generating successfully. 4 complete videos made so far.",
+    "questions": "Ready for launch push? Want different content angles?",
+    "nextCycleHours": 1
+  },
+  {
+    "timestamp": "2026-03-04T05:25:00+02:00",
+    "status": "05:25 SAST, 27 assets logged; last action 05:15 SAST image '3AM CRAVINGS? iHhashi DEZ IT' (video blocked by plan limit).",
+    "recentContent": [
+      {
+        "time": "2026-03-04T05:15:00+02:00",
+        "hook": "3AM CRAVINGS? iHhashi DEZ IT",
+        "language": "English + Slang (Night)",
+        "type": "image-only"
+      },
+      {
+        "time": "2026-03-04T01:15:00+02:00",
+        "hook": "Labs it! iHhashi got us!",
+        "language": "English + Slang (Night)",
+        "type": "image-only"
+      },
+      {
+        "time": "2026-03-03T23:15:00+02:00",
+        "hook": "POV: It's 11pm, you forgot to cook...",
+        "language": "Mixed (Evening)",
+        "type": "image-only"
+      }
+    ],
+    "insights": "Video generation still capped (only 3/27 complete). Images generating successfully. Content mix: English, Zulu, SA Slang. Themes: empty fridge, late night cravings, student life.",
+    "questions": "Any new themes or campaigns? Want me to try different hooks?",
+    "nextCycleHours": 1
+  },
+  {
+    "timestamp": "2026-03-04T06:15:00+02:00",
+    "status": "06:15 SAST, 27 assets logged; last action 05:15 SAST image '3AM CRAVINGS? iHhashi DEZ IT' (video blocked by plan limit).",
+    "recentContent": [
+      {
+        "time": "2026-03-04T05:15:00+02:00",
+        "hook": "3AM CRAVINGS? iHhashi DEZ IT",
+        "language": "English + Slang (Night)",
+        "type": "image-only"
+      },
+      {
+        "time": "2026-03-04T01:15:00+02:00",
+        "hook": "Labs it! iHhashi got us!",
+        "language": "English + Slang (Night)",
+        "type": "image-only"
+      },
+      {
+        "time": "2026-03-03T23:15:00+02:00",
+        "hook": "POV: It's 11pm, you forgot to cook...",
+        "language": "Mixed (Evening)",
+        "type": "image-only"
+      }
+    ],
+    "insights": "Images generating successfully. Videos still blocked by plan limits (4 complete out of 27 total). Night/evening content performing well.",
+    "questions": "Any new campaigns or themes to try? Language mix OK?",
+    "nextCycleHours": 1
+  },
+  {
+    "timestamp": "2026-03-04T07:15:00+02:00",
+    "status": "07:15 SAST, 27 assets logged; last action 05:15 SAST image '3AM CRAVINGS? iHhashi DEZ IT' (video blocked by plan limit).",
+    "recentContent": [
+      {
+        "time": "2026-03-04T05:15:00+02:00",
+        "hook": "3AM CRAVINGS? iHhashi DEZ IT",
+        "language": "English + Slang (Night)",
+        "type": "image-only"
+      },
+      {
+        "time": "2026-03-04T01:15:00+02:00",
+        "hook": "Labs it! iHhashi got us!",
+        "language": "English + Slang (Night)",
+        "type": "image-only"
+      },
+      {
+        "time": "2026-03-03T23:15:00+02:00",
+        "hook": "POV: It's 11pm, you forgot to cook...",
+        "language": "Mixed (Evening)",
+        "type": "image-only"
+      }
+    ],
+    "insights": "Video generation capped (4/27 complete). Images OK. Multi-language: EN, Zulu, SA Slang. Themes: late-night cravings, empty fridge, student life.",
+    "questions": "New campaigns or hooks to test? Video priority?",
+    "nextCycleHours": 1
+  },
+  {
+    "timestamp": "2026-03-04T08:30:00+02:00",
+    "status": "08:30 SAST, 28 assets logged; last action 07:15 SAST image 'POV: student with empty fridge' (video blocked by plan limit).",
+    "recentContent": [
+      {
+        "time": "2026-03-04T07:15:00+02:00",
+        "hook": "POV: You're a student with an empty fridge... Empty fridge → Full feast",
+        "language": "English (Morning)",
+        "type": "image-only"
+      },
+      {
+        "time": "2026-03-04T05:15:00+02:00",
+        "hook": "3AM CRAVINGS? iHhashi DEZ IT",
+        "language": "English + Slang (Night)",
+        "type": "image-only"
+      },
+      {
+        "time": "2026-03-04T01:15:00+02:00",
+        "hook": "Labs it! iHhashi got us!",
+        "language": "English + Slang (Night)",
+        "type": "image-only"
+      }
+    ],
+    "insights": "Images generating successfully. Videos capped by plan limits (4/28 complete). Peak times: night/evening. Languages: English, Zulu, SA Slang.",
+    "questions": "Test different hook styles or target specific demographics? Video plan upgrade?",
+    "nextCycleHours": 1
+  },
+  {
+    "timestamp": "2026-03-04T08:35:00+02:00",
+    "status": "08:35 SAST, 28 assets logged; last action 07:15 SAST image 'POV: student with empty fridge' (video blocked by plan limit).",
+    "recentContent": [
+      {
+        "time": "2026-03-04T07:15:00+02:00",
+        "hook": "POV: You're a student with an empty fridge... Empty fridge → Full feast",
+        "language": "English (Morning)",
+        "type": "image-only"
+      },
+      {
+        "time": "2026-03-04T05:15:00+02:00",
+        "hook": "3AM CRAVINGS? iHhashi DEZ IT",
+        "language": "English + Slang (Night)",
+        "type": "image-only"
+      },
+      {
+        "time": "2026-03-04T01:15:00+02:00",
+        "hook": "Labs it! iHhashi got us!",
+        "language": "English + Slang (Night)",
+        "type": "image-only"
+      }
+    ],
+    "insights": "Video generation still blocked by plan limits (4/28 complete). Night/evening content strongest. Multi-language: English, Zulu, SA Slang.",
+    "questions": "Any specific campaigns for iHhashi launch?",
+    "nextCycleHours": 1
+  },
+  {
+    "timestamp": "2026-03-04T19:15:00+02:00",
+    "status": "19:15 SAST, 28 assets logged; last action 07:15 SAST morning image 'POV: student with empty fridge' (video blocked by plan limit).",
+    "recentContent": [
+      {
+        "time": "2026-03-04T07:15:00+02:00",
+        "hook": "POV: You're a student with an empty fridge... Empty fridge → Full feast",
+        "language": "English (Morning)",
+        "type": "image-only"
+      },
+      {
+        "time": "2026-03-04T05:15:00+02:00",
+        "hook": "3AM CRAVINGS? iHhashi DEZ IT",
+        "language": "English + Slang (Night)",
+        "type": "image-only"
+      },
+      {
+        "time": "2026-03-04T01:15:00+02:00",
+        "hook": "Labs it! iHhashi got us!",
+        "language": "English + Slang (Night)",
+        "type": "image-only"
+      }
+    ],
+    "insights": "Images OK. Videos capped @ 4/28 complete. Night/evening strongest. Languages: EN, Zulu, SA Slang. Themes: empty fridge, late cravings, student life.",
+    "questions": "Launch campaign focus? Video plan upgrade?",
+    "nextCycleHours": 1
+  },
+  {
+    "timestamp": "2026-03-04T19:20:00+02:00",
+    "status": "19:20 SAST, 28 assets logged; last action 19:15 SAST evening image 'Haai! iHhashi bring die aandete reg' (video blocked by plan limit).",
+    "recentContent": [
+      {
+        "time": "2026-03-04T19:15:00+02:00",
+        "hook": "Haai! iHhashi bring die aandete reg 🍛",
+        "language": "Mixed (Evening)",
+        "type": "image-only"
+      },
+      {
+        "time": "2026-03-04T07:15:00+02:00",
+        "hook": "POV: You're a student with an empty fridge... Empty fridge → Full feast",
+        "language": "English (Morning)",
+        "type": "image-only"
+      },
+      {
+        "time": "2026-03-04T05:15:00+02:00",
+        "hook": "3AM CRAVINGS? iHhashi DEZ IT",
+        "language": "English + Slang (Night)",
+        "type": "image-only"
+      }
+    ],
+    "insights": "Images generating successfully. Videos capped @ 3/28 complete. Night/evening strongest. Languages: EN, Zulu, SA Slang. Themes: empty fridge, late cravings, student life.",
+    "questions": "Launch campaign focus? Video plan upgrade? Different content themes?",
+    "nextCycleHours": 1
+  },
+  {
+    "timestamp": "2026-03-04T20:15:00+02:00",
+    "status": "20:15 SAST, 30 assets logged; last action 19:20 SAST image 'Sies! Empty fridge? 😱 iHhashi iletha ukutya!' (video blocked by plan limit).",
+    "recentContent": [
+      {
+        "time": "2026-03-04T19:20:00+02:00",
+        "hook": "Sies! Empty fridge? 😱 iHhashi iletha ukutya!",
+        "language": "Mixed (Evening)",
+        "type": "image-only"
+      },
+      {
+        "time": "2026-03-04T19:15:00+02:00",
+        "hook": "Haai! iHhashi bring die aandete reg 🍛",
+        "language": "Mixed (Evening)",
+        "type": "image-only"
+      },
+      {
+        "time": "2026-03-04T07:15:00+02:00",
+        "hook": "POV: You're a student with an empty fridge... Empty fridge → Full feast",
+        "language": "English (Morning)",
+        "type": "image-only"
+      }
+    ],
+    "insights": "30 hooks generated total. 4 complete videos (video blocked most cycles). Languages: English, Zulu, Mixed/Slang. Themes: empty fridge, late-night cravings, student life.",
+    "questions": "Any new campaigns or promos to highlight? Want different hook angles?",
+    "nextCycleHours": 1
+  }
+]
