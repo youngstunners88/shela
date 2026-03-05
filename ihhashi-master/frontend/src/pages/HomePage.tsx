@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Search, MapPin } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { Header } from '../components/Header'
 import { CategoryBar } from '../components/CategoryBar'
 import { MerchantCard } from '../components/MerchantCard'
@@ -73,19 +74,19 @@ export function HomePage() {
       <Header />
       
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-4 py-8">
+      <div className="bg-gradient-to-r from-[#FF6B35] to-[#FF8B5A] px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold text-white mb-2">
             Delivery for Mzansi
           </h1>
-          <p className="text-primary-100 mb-6">
+          <p className="text-orange-100 mb-6">
             Food, groceries, and more - delivered to your door
           </p>
           
           {/* Location Input */}
           <div className="bg-white rounded-xl p-4 shadow-lg">
             <div className="flex items-center gap-3 mb-3">
-              <MapPin className="w-5 h-5 text-primary-500" />
+              <MapPin className="w-5 h-5 text-[#FF6B35]" />
               <input
                 type="text"
                 placeholder="Enter delivery address"
@@ -93,7 +94,7 @@ export function HomePage() {
                 onChange={(e) => setAddress(e.target.value)}
                 className="flex-1 outline-none text-gray-700"
               />
-              <button className="text-primary-500 text-sm font-medium">
+              <button className="text-[#FF6B35] text-sm font-medium">
                 Use current location
               </button>
             </div>
@@ -139,22 +140,22 @@ export function HomePage() {
       
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around py-3 md:hidden">
-        <button className="flex flex-col items-center text-primary-500">
+        <Link to="/" className="flex flex-col items-center text-[#FF6B35]">
           <span className="text-xl">🏠</span>
           <span className="text-xs mt-1">Home</span>
-        </button>
-        <button className="flex flex-col items-center text-gray-400">
+        </Link>
+        <Link to="/products" className="flex flex-col items-center text-gray-400">
           <span className="text-xl">🔍</span>
           <span className="text-xs mt-1">Search</span>
-        </button>
-        <button className="flex flex-col items-center text-gray-400">
+        </Link>
+        <Link to="/orders" className="flex flex-col items-center text-gray-400">
           <span className="text-xl">📦</span>
           <span className="text-xs mt-1">Orders</span>
-        </button>
-        <button className="flex flex-col items-center text-gray-400">
+        </Link>
+        <Link to="/profile" className="flex flex-col items-center text-gray-400">
           <span className="text-xl">👤</span>
           <span className="text-xs mt-1">Profile</span>
-        </button>
+        </Link>
       </nav>
     </div>
   )

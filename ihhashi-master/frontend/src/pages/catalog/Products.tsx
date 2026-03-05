@@ -4,21 +4,23 @@ import { ArrowLeft, Search, ShoppingCart, Plus, Minus } from 'lucide-react'
 import { useCart } from '../../hooks/useCart'
 
 const mockProducts = [
-  { id: '1', name: 'Stainless Steel Spork', price: 45, category: 'utensils', stock: 50, image: 'https://placehold.co/200x200/FF6B35/white?text=Spork' },
-  { id: '2', name: 'Bic Ballpoint Pens (10pk)', price: 35, category: 'stationery', stock: 100, image: 'https://placehold.co/200x200/3B82F6/white?text=Pens' },
-  { id: '3', name: 'Kitchen Towels (3pk)', price: 55, category: 'household', stock: 30, image: 'https://placehold.co/200x200/10B981/white?text=Towels' },
-  { id: '4', name: 'USB Charging Cable', price: 89, category: 'electronics', stock: 25, image: 'https://placehold.co/200x200/8B5CF6/white?text=Cable' },
-  { id: '5', name: 'Notebook A5 (100 pages)', price: 25, category: 'stationery', stock: 75, image: 'https://placehold.co/200x200/3B82F6/white?text=Notebook' },
-  { id: '6', name: 'Wooden Spatula', price: 35, category: 'utensils', stock: 40, image: 'https://placehold.co/200x200/FF6B35/white?text=Spatula' },
+  { id: '1', name: 'Fresh Bread Loaf', price: 18, category: 'food', stock: 50, image: 'https://placehold.co/200x200/FF6B35/white?text=Bread' },
+  { id: '2', name: 'Milk 2L', price: 36, category: 'dairy', stock: 100, image: 'https://placehold.co/200x200/3B82F6/white?text=Milk' },
+  { id: '3', name: 'Mixed Salad Pack', price: 45, category: 'vegetables', stock: 30, image: 'https://placehold.co/200x200/10B981/white?text=Salad' },
+  { id: '4', name: 'Apple Pack (6)', price: 32, category: 'fruits', stock: 25, image: 'https://placehold.co/200x200/EF4444/white?text=Apples' },
+  { id: '5', name: 'Rice 5kg', price: 89, category: 'groceries', stock: 75, image: 'https://placehold.co/200x200/F59E0B/white?text=Rice' },
+  { id: '6', name: 'Cheese Block 400g', price: 68, category: 'dairy', stock: 40, image: 'https://placehold.co/200x200/FBBF24/white?text=Cheese' },
+  { id: '7', name: 'Banana Bunch', price: 22, category: 'fruits', stock: 60, image: 'https://placehold.co/200x200/FDE047/white?text=Bananas' },
+  { id: '8', name: 'Tomatoes 1kg', price: 28, category: 'vegetables', stock: 45, image: 'https://placehold.co/200x200/EF4444/white?text=Tomatoes' },
 ]
 
-const categories = ['All', 'Utensils', 'Stationery', 'Household', 'Electronics']
+const categories = ['All', 'Food', 'Groceries', 'Fruits', 'Vegetables', 'Dairy']
 
 export default function Products() {
   const { category } = useParams()
   const [searchQuery, setSearchQuery] = useState('')
   const [activeCategory, setActiveCategory] = useState(category || 'All')
-  const { items, addItem, updateQuantity } = useCart()
+  const { items, addItem, updateQuantity, getItemCount } = useCart()
 
   const filteredProducts = mockProducts.filter(p => {
     const matchesCategory = activeCategory === 'All' || p.category.toLowerCase() === activeCategory.toLowerCase()
@@ -51,9 +53,9 @@ export default function Products() {
           </div>
           <Link to="/cart" className="relative">
             <ShoppingCart className="w-6 h-6 text-gray-600" />
-            {items.length > 0 && (
+            {getItemCount() > 0 && (
               <span className="absolute -top-1 -right-1 bg-[#FF6B35] text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">
-                {items.length}
+                {getItemCount()}
               </span>
             )}
           </Link>
@@ -133,7 +135,7 @@ export default function Products() {
             to="/cart"
             className="bg-[#FF6B35] text-white py-4 px-6 rounded-xl flex items-center justify-between shadow-lg"
           >
-            <span>{items.length} items</span>
+            <span>{getItemCount()} items</span>
             <span className="font-bold">R{useCart.getState().getTotal()}</span>
           </Link>
         </div>

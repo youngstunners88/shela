@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { Star, Clock } from 'lucide-react'
 
 interface Merchant {
@@ -18,8 +19,8 @@ interface MerchantCardProps {
 
 export function MerchantCard({ merchant }: MerchantCardProps) {
   return (
-    <a
-      href={`/merchant/${merchant.id}`}
+    <Link
+      to={`/merchant/${merchant.id}`}
       className="block bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition"
     >
       {/* Image */}
@@ -54,6 +55,6 @@ export function MerchantCard({ merchant }: MerchantCardProps) {
           <span>{merchant.reviews} reviews</span>
         </div>
       </div>
-    </a>
+    </Link>
   )
 }

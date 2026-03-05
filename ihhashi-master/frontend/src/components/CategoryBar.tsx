@@ -20,7 +20,7 @@ export function CategoryBar({ categories, selected, onSelect }: CategoryBarProps
             onClick={() => onSelect(category.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-full transition ${
               selected === category.id
-                ? 'bg-primary-500 text-white'
+                ? 'bg-primary text-white'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >

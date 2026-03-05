@@ -23,7 +23,7 @@ export default function SplashScreen() {
       </div>
       
       {/* Tagline */}
-      <p className="mt-4 text-black text-lg">Food Delivery SA</p>
+      <p className="mt-4 text-black text-lg">Delivery Platform SA</p>
       
       {/* Loading indicator */}
       <div className="mt-8 flex gap-2">

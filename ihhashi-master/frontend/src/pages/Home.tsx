@@ -1,28 +1,26 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Search, ShoppingCart, Menu, User } from 'lucide-react'
-
-interface HomeProps {
-  isAuthenticated: boolean
-}
+import { useAuth } from '../App'
 
 const categories = [
-  { id: 'utensils', name: 'Utensils', icon: '🍴', color: 'bg-orange-100' },
-  { id: 'stationery', name: 'Stationery', icon: '📝', color: 'bg-blue-100' },
-  { id: 'household', name: 'Household', icon: '🏠', color: 'bg-green-100' },
-  { id: 'electronics', name: 'Electronics', icon: '📱', color: 'bg-purple-100' },
-  { id: 'groceries', name: 'Groceries', icon: '🛒', color: 'bg-yellow-100' },
+  { id: 'food', name: 'Food', icon: '🍽️', color: 'bg-orange-100' },
+  { id: 'groceries', name: 'Groceries', icon: '🛒', color: 'bg-green-100' },
+  { id: 'fruits', name: 'Fruits', icon: '🍎', color: 'bg-red-100' },
+  { id: 'vegetables', name: 'Vegetables', icon: '🥬', color: 'bg-emerald-100' },
+  { id: 'dairy', name: 'Dairy', icon: '🥛', color: 'bg-blue-100' },
 ]
 
 const popularProducts = [
-  { id: '1', name: 'Stainless Steel Spork', price: 45, category: 'utensils', image: 'https://placehold.co/200x200/FF6B35/white?text=Spork' },
-  { id: '2', name: 'Bic Ballpoint Pens (10pk)', price: 35, category: 'stationery', image: 'https://placehold.co/200x200/3B82F6/white?text=Pens' },
-  { id: '3', name: 'Kitchen Towels (3pk)', price: 55, category: 'household', image: 'https://placehold.co/200x200/10B981/white?text=Towels' },
-  { id: '4', name: 'USB Charging Cable', price: 89, category: 'electronics', image: 'https://placehold.co/200x200/8B5CF6/white?text=Cable' },
+  { id: '1', name: 'Fresh Bread Loaf', price: 18, category: 'food', image: 'https://placehold.co/200x200/FF6B35/white?text=Bread' },
+  { id: '2', name: 'Milk 2L', price: 36, category: 'dairy', image: 'https://placehold.co/200x200/3B82F6/white?text=Milk' },
+  { id: '3', name: 'Mixed Salad Pack', price: 45, category: 'vegetables', image: 'https://placehold.co/200x200/10B981/white?text=Salad' },
+  { id: '4', name: 'Apple Pack (6)', price: 32, category: 'fruits', image: 'https://placehold.co/200x200/EF4444/white?text=Apples' },
 ]
 
-export default function Home({ isAuthenticated }: HomeProps) {
+export default function Home() {
   const [searchQuery, setSearchQuery] = useState('')
+  const { isAuthenticated } = useAuth()
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -33,7 +31,7 @@ export default function Home({ isAuthenticated }: HomeProps) {
             <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Search utensils, stationery..."
+              placeholder="Search food, groceries..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="input pl-10"
@@ -56,13 +54,19 @@ export default function Home({ isAuthenticated }: HomeProps) {
 
       {/* Hero Banner */}
       <div className="bg-gradient-to-r from-[#FF6B35] to-[#FF8B5A] text-white p-6 mx-4 mt-4 rounded-2xl">
-        <h2 className="text-xl font-bold mb-2">Fast delivery, everyday essentials</h2>
+        <h2 className="text-xl font-bold mb-2">Fast delivery across Mzansi</h2>
         <p className="text-white/90 text-sm mb-3">
-          Utensils, stationery, and household items delivered in 30-45 minutes
+          Food, groceries, fruits, vegetables & dairy delivered in 30-45 minutes
         </p>
         <Link to="/products" className="inline-block bg-white text-[#FF6B35] font-semibold px-4 py-2 rounded-lg text-sm">
           Start Shopping
         </Link>
+      </div>
+
+      {/* Courier Service Banner */}
+      <div className="mx-4 mt-4 p-4 bg-gradient-to-r from-secondary to-emerald-500 text-white rounded-xl">
+        <h3 className="font-bold mb-1">Need something delivered?</h3>
+        <p className="text-sm text-white/90">Personal courier services available</p>
       </div>
 
       {/* Categories */}
