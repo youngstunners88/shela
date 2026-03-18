@@ -1,0 +1,83 @@
+name: risk-assessor-v1
+description: Custom AI model for underwriting risk assessment
+domain: insurance
+version: 1.0.0
+
+base_model: mistral-small-4
+training:
+  epochs: 4
+  learning_rate: 0.00005
+  batch_size: 16
+  warmup_steps: 200
+
+datasets:
+  primary: /data/risk/training.jsonl
+  validation: /data/risk/validation.jsonl
+
+capabilities:
+  - name: risk_scoring
+    description: Calculate risk scores for applications
+    input: application_data
+    output: risk_score_0_100
+    
+  - name: pricing_recommendation
+    description: Suggest appropriate premium rates
+    input: risk_score, application_data
+    output: recommended_premium
+    
+  - name: exposure_analysis
+    description: Identify high-risk exposures
+    input: policy_details
+    output: exposure_assessment
+    
+  - name: risk_mitigation
+    description: Suggest risk reduction strategies
+    input: risk_factors
+    output: mitigation_recommendations
+
+prompt_template: |
+  You are a senior insurance underwriter specializing in risk assessment.
+  
+  Application: {{application_data}}
+  Historical Context: {{similar_cases}}
+  
+  Provide a comprehensive risk assessment:
+  1. Overall risk score (0-100)
+  2. Key risk factors identified
+  3. Recommended premium range
+  4. Accept/decline/refer recommendation
+  5. Conditions or endorsements needed
+  6. Confidence level in assessment
+
+examples:
+  - input: |
+      New commercial auto policy:
+      - Business: Delivery service, 5 vehicles
+      - Drivers: 3 experienced, 2 new hires
+      - Territory: Urban, high traffic
+      - Prior losses: 2 minor claims in 3 years
+      - Safety program: Yes, certified
+    output: |
+      {
+        "risk_score": 65,
+        "risk_tier": "medium",
+        "key_factors": [
+          "urban_territory_increases_collision_risk",
+          "new_drivers_require_monitoring",
+          "safety_program_mitigates_risk"
+        ],
+        "premium_range": {"min": 8500, "max": 12000},
+        "recommendation": "accept_with_conditions",
+        "conditions": [
+          "new_drivers_complete_defensive_driving",
+          "telematics_tracking_required",
+          "quarterly_safety_reviews"
+        ],
+        "confidence": 78
+      }
+
+deployment:
+  endpoint: /v1/chat/completions
+  temperature: 0.2
+  max_tokens: 1500
+  top_p: 0.85

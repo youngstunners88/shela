@@ -1,0 +1,87 @@
+name: fraud-detector-v1
+description: Custom AI model for insurance fraud detection
+domain: insurance
+version: 1.0.0
+
+base_model: mistral-small-4
+training:
+  epochs: 5
+  learning_rate: 0.00002
+  batch_size: 64
+  warmup_steps: 300
+  class_weights: {legitimate: 1.0, suspicious: 2.5, fraudulent: 5.0}
+
+datasets:
+  primary: /data/fraud/training.jsonl
+  validation: /data/fraud/validation.jsonl
+  negative_examples: /data/claims/legitimate.jsonl
+
+capabilities:
+  - name: fraud_scoring
+    description: Assign fraud risk scores to claims
+    input: claim_data
+    output: fraud_probability_0_1
+    
+  - name: pattern_detection
+    description: Identify suspicious patterns
+    input: claim_data + historical_patterns
+    output: pattern_matches
+    
+  - name: investigation_recommendation
+    description: Suggest investigation actions
+    input: fraud_indicators
+    output: investigation_plan
+    
+  - name: network_analysis
+    description: Detect organized fraud rings
+    input: entity_relationships
+    output: network_suspicion_scores
+
+prompt_template: |
+  You are a fraud detection specialist with expertise in insurance schemes.
+  
+  Claim Under Review: {{claim_data}}
+  Historical Patterns: {{known_fraud_schemes}}
+  Similar Cases: {{related_claims}}
+  
+  Analyze for fraud indicators:
+  1. Fraud probability score (0.0 - 1.0)
+  2. Risk level: low/medium/high/critical
+  3. Red flags identified (list with explanations)
+  4. Recommended action: pay/investigate/refer/deny
+  5. Investigation priorities if flagged
+  6. Confidence in assessment
+
+examples:
+  - input: |
+      Claim #98765: Property damage, $45,000
+      Filed: 2 days after policy inception
+      Incident: "Water damage to basement"
+      Photos: Professional quality, timestamped 3 months ago
+      Claimant history: 3 similar claims in 2 years
+      Contractor quote: 40% above market rate
+    output: |
+      {
+        "fraud_probability": 0.87,
+        "risk_level": "critical",
+        "red_flags": [
+          "policy_inception_timing_suspicious",
+          "photo_timestamp_predates_policy",
+          "excessive_claim_history",
+          "inflated_contractor_estimates"
+        ],
+        "recommended_action": "investigate_before_payment",
+        "investigation_priorities": [
+          "verify_incident_date_independently",
+          "interview_contractor",
+          "inspect_property_damage",
+          "review_prior_claims for patterns"
+        ],
+        "confidence": 92
+      }
+
+deployment:
+  endpoint: /v1/chat/completions
+  temperature: 0.1
+  max_tokens: 1500
+  top_p: 0.8

@@ -1,0 +1,78 @@
+name: insurance-hackathon-forge-integration
+description: Mistral Forge integration for insurance AI hackathon
+version: 1.0.0
+
+forge_config:
+  endpoint: ${MISTRAL_ENDPOINT:-https://api.mistral.ai/v1}
+  api_key: ${MISTRAL_API_KEY}
+  project_id: ${FORGE_PROJECT_ID:-insurance-hackathon}
+
+models:
+  claims-processor:
+    name: claims-processor-v1
+    base_model: mistral-small-4
+    dataset: /data/claims/training.jsonl
+    training_config:
+      epochs: 3
+      learning_rate: 0.0001
+      batch_size: 32
+    deployment:
+      temperature: 0.3
+      max_tokens: 2000
+
+  risk-assessor:
+    name: risk-assessor-v1
+    base_model: mistral-small-4
+    dataset: /data/risk/training.jsonl
+    training_config:
+      epochs: 4
+      learning_rate: 0.00005
+      batch_size: 16
+    deployment:
+      temperature: 0.2
+      max_tokens: 1500
+
+  fraud-detector:
+    name: fraud-detector-v1
+    base_model: mistral-small-4
+    dataset: /data/fraud/training.jsonl
+    training_config:
+      epochs: 5
+      learning_rate: 0.00002
+      batch_size: 64
+    deployment:
+      temperature: 0.1
+      max_tokens: 1500
+
+workflows:
+  - name: claims-intake
+    trigger: new_claim_submitted
+    agents:
+      - claims-intake-agent
+      - fraud-detector
+    steps:
+      - extract_information
+      - fraud_screening
+      - priority_assessment
+      - adjuster_assignment
+
+  - name: risk-assessment
+    trigger: new_application_received
+    agents:
+      - risk-assessor
+    steps:
+      - data_validation
+      - risk_scoring
+      - pricing_recommendation
+      - decision_support
+
+  - name: fraud-investigation
+    trigger: fraud_score_exceeds_threshold
+    agents:
+      - fraud-detector
+      - investigation-coordinator
+    steps:
+      - pattern_analysis
+      - network_analysis
+      - evidence_gathering
+      - recommendation

@@ -1,0 +1,73 @@
+name: claims-processor-v1
+description: Custom AI model for automated claims processing
+domain: insurance
+version: 1.0.0
+
+base_model: mistral-small-4
+training:
+  epochs: 3
+  learning_rate: 0.0001
+  batch_size: 32
+  warmup_steps: 100
+
+datasets:
+  primary: /data/claims/training.jsonl
+  validation: /data/claims/validation.jsonl
+  
+capabilities:
+  - name: claim_intake
+    description: Extract information from claim submissions
+    input: claim_documents
+    output: structured_claim_data
+    
+  - name: claim_triage
+    description: Route claims to appropriate adjusters
+    input: claim_data
+    output: routing_decision
+    
+  - name: reserve_estimation
+    description: Estimate initial reserve amounts
+    input: claim_data
+    output: reserve_amount
+    
+  - name: document_check
+    description: Check completeness of claim submissions
+    input: claim_documents
+    output: missing_items_list
+
+prompt_template: |
+  You are an expert insurance claims processor with 20 years of experience.
+  
+  Task: {{task}}
+  Claim Data: {{claim_data}}
+  
+  Analyze the claim carefully and provide:
+  1. Key facts extracted from the submission
+  2. Recommended action
+  3. Confidence score (0-100)
+  4. Any red flags or concerns
+
+examples:
+  - input: |
+      Claim #12345: Auto accident on 2024-03-15. 
+      Insured: John Doe. Vehicle: 2020 Toyota Camry.
+      Damage: Front bumper, headlight. Police report filed.
+    output: |
+      {
+        "claim_number": "12345",
+        "incident_date": "2024-03-15",
+        "claimant": "John Doe",
+        "vehicle": "2020 Toyota Camry",
+        "damages": ["front_bumper", "headlight"],
+        "police_report": true,
+        "recommended_action": "assign_to_auto_adjuster",
+        "initial_reserve": 3500,
+        "confidence": 85,
+        "red_flags": []
+      }
+
+deployment:
+  endpoint: /v1/chat/completions
+  temperature: 0.3
+  max_tokens: 2000
+  top_p: 0.9

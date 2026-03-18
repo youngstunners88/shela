@@ -1,0 +1,89 @@
+name: claims-intake-agent
+description: Initial intake and triage agent for new claims
+type: conversational
+version: 1.0.0
+
+model:
+  provider: mistral-forge
+  model_id: claims-processor-v1
+  temperature: 0.3
+  max_tokens: 2000
+
+triggers:
+  - type: webhook
+    endpoint: /webhooks/new-claim
+  - type: scheduled
+    cron: "*/5 * * * *"
+    query: "pending_intake"
+
+input_schema:
+  claim_number:
+    type: string
+    required: true
+  claimant_info:
+    type: object
+    required: true
+  incident_description:
+    type: string
+    required: true
+  documents:
+    type: array
+    required: false
+
+output_schema:
+  claim_summary:
+    type: object
+  extracted_fields:
+    type: object
+  recommended_action:
+    type: string
+    enum: [approve, review, investigate, decline]
+  priority_score:
+    type: number
+    range: [0, 100]
+  assigned_adjuster:
+    type: string
+
+workflow:
+  steps:
+    - name: extract_information
+      action: analyze_documents
+      input: "{{documents}}"
+      
+    - name: validate_completeness
+      action: check_required_fields
+      input: "{{extracted_fields}}"
+      
+    - name: assess_priority
+      action: calculate_priority
+      input:
+        claim_type: "{{extracted_fields.type}}"
+        severity: "{{extracted_fields.severity}}"
+        complexity: "{{extracted_fields.complexity}}"
+        
+    - name: route_claim
+      action: assign_adjuster
+      input:
+        priority: "{{priority_score}}"
+        specialty: "{{extracted_fields.type}}"
+        location: "{{extracted_fields.territory}}"
+
+prompt: |
+  You are the initial intake agent for an insurance claims department.
+  
+  New Claim Details:
+  - Claim Number: {{claim_number}}
+  - Claimant: {{claimant_info}}
+  - Incident Description: {{incident_description}}
+  - Documents Received: {{documents.length}}
+  
+  Your tasks:
+  1. Extract all relevant information from the submission
+  2. Identify the claim type (auto, property, liability, etc.)
+  3. Assess severity and complexity
+  4. Check for missing required information
+  5. Calculate priority score (0-100)
+  6. Recommend action: approve, review, investigate, or decline
+  7. Suggest appropriate adjuster assignment
+  
+  Respond in JSON format with all extracted and calculated fields.
