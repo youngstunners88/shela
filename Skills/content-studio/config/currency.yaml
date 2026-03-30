@@ -1,0 +1,66 @@
+# ckUSDC Configuration for Content Studio
+# Internet Computer stablecoin funding system
+
+stablecoin:
+  token: ckUSDC
+  network: Internet Computer
+  decimals: 6
+  canister_id: "ryjl3-tyaaa-aaaaa-aaaba-cai"  # ckUSDC ledger
+  
+funding:
+  type: on-chain
+  mechanism: dao-voting
+  
+  teacher_pool:
+    enabled: true
+    min_stake: 10
+    distribution:
+      type: proportional
+      base_share: 0.5
+      performance_multiplier: 1.5
+      
+  voting:
+    enabled: true
+    quorum: 0.51
+    proposal_duration_hours: 168  # 7 days
+    
+    spend_categories:
+      - supplies
+      - equipment
+      - field_trip
+      - software
+      - training
+      
+    limits:
+      daily_max: 500
+      monthly_max: 2000
+      proposal_min: 50
+      proposal_max: 5000
+
+wallet:
+  integration: ic
+  derivation_path: "m/44'/223'/0'/0/0"
+  
+notifications:
+  channels:
+    - telegram
+    - email
+    - in-app
+    
+  events:
+    - funding_received
+    - proposal_approved
+    - proposal_rejected
+    - spend_executed
+    - pool_distribution
+
+revenue:
+  skool_integration:
+    enabled: true
+    flow: teacher_pool
+    auto_distribute: true
+    
+  fee_structure:
+    platform: 0.05
+    teacher: 0.85
+    community: 0.10

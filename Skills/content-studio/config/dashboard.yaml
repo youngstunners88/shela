@@ -1,0 +1,99 @@
+# Dashboard Configuration
+# Content Studio dashboard settings
+
+dashboard:
+  title: "Content Studio"
+  subtitle: "The all-in-one hub teachers actually want"
+  
+  tiles:
+    content_studio:
+      enabled: true
+      position: "top"
+      quick_actions:
+        - id: canva-flyer
+          label: "Quick Flyer"
+          icon: "FileImage"
+          plugin: canva
+          action: "create-flyer"
+          
+        - id: canva-certificate
+          label: "Certificate"
+          icon: "Award"
+          plugin: canva
+          action: "create-certificate"
+          
+        - id: skool-community
+          label: "Community"
+          icon: "Users"
+          plugin: skool
+          action: "create-community"
+          
+        - id: skool-invite
+          label: "Invite Students"
+          icon: "UserPlus"
+          plugin: skool
+          action: "send-invites"
+
+    wallet:
+      enabled: true
+      position: "left"
+      show_balance: true
+      show_history: true
+      
+    live_classes:
+      enabled: false  # Phase 2
+      position: "right"
+      
+    revenue:
+      enabled: true
+      position: "right"
+      show_projections: true
+
+  theme:
+    primary: "#6366F1"  # Indigo
+    secondary: "#EC4899"  # Pink
+    accent: "#F59E0B"   # Amber
+    background: "#0F172A"  # Slate 900
+    surface: "#1E293B"   # Slate 800
+
+  branding:
+    logo_text: "Content Studio"
+    favicon: "/assets/favicon.ico"
+    og_image: "/assets/og-dashboard.png"
+
+plugins:
+  canva:
+    enabled: true
+    position: 1
+    quick_action_count: 6
+    
+  skool:
+    enabled: true
+    position: 2
+    quick_action_count: 6
+    revenue_display: true
+
+funding:
+  show_in_dashboard: true
+  show_pool_status: true
+  show_voting_opportunities: true
+  
+  display_options:
+    currency: "ckUSDC"
+    decimals: 6
+    prefix: ""
+    suffix: " ckUSDC"
+    
+  notifications:
+    funding_received: true
+    proposal_approved: true
+    distribution_complete: true
+
+telemetry:
+  enabled: true
+  events:
+    - design_created
+    - community_created
+    - student_invited
+    - funding_received
+    - wallet_connected

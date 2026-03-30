@@ -1,0 +1,149 @@
+# Teacher API Specification
+# Content Studio teacher management endpoints
+
+openapi: 3.0.0
+info:
+  title: Content Studio Teacher API
+  version: 1.0.0
+  description: API for teacher management, funding, and classroom operations
+
+paths:
+  /api/teachers/register:
+    post:
+      summary: Register new teacher
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string }
+                name: { type: string }
+                ic_wallet: { type: string }
+              required: [email, name]
+      responses:
+        201:
+          description: Teacher registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  teacher_id: { type: string }
+                  wallet_created: { type: boolean }
+
+  /api/teachers/{id}/wallet:
+    get:
+      summary: Get teacher wallet
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  address: { type: string }
+                  balance_ckusdc: { type: number }
+                  pending_credits: { type: number }
+
+  /api/teachers/{id}/funding:
+    post:
+      summary: Request funding for classroom
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount: { type: number }
+                category: { 
+                  type: string 
+                  enum: [supplies, equipment, field_trip, software, training]
+                }
+                description: { type: string }
+      responses:
+        201:
+          description: Proposal created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  proposal_id: { type: string }
+                  voting_ends: { type: string, format: date-time }
+
+  /api/teachers/{id}/proposals:
+    get:
+      summary: List teacher's funding proposals
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: string }
+                    amount: { type: number }
+                    status: { type: string, enum: [pending, approved, rejected, executed] }
+                    votes_yes: { type: number }
+                    votes_no: { type: number }
+
+  /api/teachers/{id}/canva:
+    get:
+      summary: Get Canva connection status
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  connected: { type: boolean }
+                  templates_available: { type: number }
+                  recent_designs: { type: array }
+
+  /api/teachers/{id}/skool:
+    get:
+      summary: Get Skool community info
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  community_id: { type: string }
+                  community_name: { type: string }
+                  member_count: { type: number }
+                  revenue_distributed: { type: number }
+                  revenue_pending: { type: number }
+
+  /api/teachers/{id}/dashboard:
+    get:
+      summary: Get complete dashboard data
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profile:
+                    type: object
+                    properties:
+                      name: { type: string }
+                      email: { type: string }
+                      joined_at: { type: string, format: date-time }
+                  wallet:
+                    type: object
+                    properties:
+                      balance: { type: number }
+                      total_earned: { type: number }
+                  plugins:
+                    type: object
+                    properties:
+                      canva_connected: { type: boolean }
+                      skool_connected: { type: boolean }
+                      last_sync: { type: string, format: date-time }
