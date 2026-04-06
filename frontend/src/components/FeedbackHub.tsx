@@ -357,4 +357,4 @@ const FeedbackHub: React.FC<Props> = ({ user, isOpen, onClose, suggestions, faqs
   );
 };
 
-export default React.memo(FeedbackHub);
+export default FeedbackHub;

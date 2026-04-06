@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import type { UserProfile, ActivePing, RoutePath, DriverStatus, ChatMessage, Review } from '../types';
-import { UserRole } from '../types';
+import type { UserProfile, ActivePing, RoutePath, DriverStatus, ChatMessage } from '../types';
 import { TAXI_RANKS, POINT_VALUES } from '../constants';
 import { Play, Users, MapPin, Navigation, Square, Banknote, X, History, UserMinus, UserPlus, MessageCircle, ShieldAlert, Send, Search, Car, AlertTriangle, Zap, LocateFixed, ShieldCheck, Sparkles, Star, Trophy, Type, ChevronLeft, Bell, CheckCircle2, User } from 'lucide-react';
 import RouteMap from './RouteMap';
@@ -25,14 +24,13 @@ interface Props {
   isOnline?: boolean;
   otherDriversOnRoute?: { id: string; name: string; coords: {x: number, y: number} }[];
   onAcceptPing?: (pingId: string, driverId: string, driverName: string, price: number) => void;
-  onSubmitReview?: (review: Review) => void;
 }
 
 const DriverDashboard: React.FC<Props> = ({
   user, pings, addPoints, routes, onUpdateRoute,
   onLocationUpdate, onStatusUpdate, onTripComplete, messages, onSendMessage,
   showTutorial, onCloseTutorial, isOnline = true,
-  otherDriversOnRoute = [], onAcceptPing, onSubmitReview
+  otherDriversOnRoute = [], onAcceptPing
 }) => {
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
@@ -55,10 +53,6 @@ const DriverDashboard: React.FC<Props> = ({
   const [tutorialStep, setTutorialStep] = useState(0);
   const [acceptedPings, setAcceptedPings] = useState<string[]>([]);
   const [showCompetingDrivers, setShowCompetingDrivers] = useState(true);
-  const [showReviewModal, setShowReviewModal] = useState(false);
-  const [reviewTarget, setReviewTarget] = useState<{id: string, name: string, role: typeof UserRole[keyof typeof UserRole]} | null>(null);
-  const [reviewRating, setReviewRating] = useState(5);
-  const [reviewComment, setReviewComment] = useState('');
 
   const categories = ['CBD', 'Soweto', 'Alexandra', 'Greater Joburg', 'East Rand', 'West Rand', 'Northern Suburbs', 'Long Distance'];
   const occupancy = Math.max(0, passengersEntered - passengersExited);
@@ -68,7 +62,7 @@ const DriverDashboard: React.FC<Props> = ({
     [routes, origin, destination, useCustomDest, useMyLocation]);
 
   const filteredMessages = useMemo(() => {
-    return messages.filter(m => m.channel === chatChannel);
+    return messages.filter(m => m.channel === chatChannel || m.isAlert);
   }, [messages, chatChannel]);
 
   // Get pings for the current route
@@ -130,30 +124,24 @@ const DriverDashboard: React.FC<Props> = ({
 
   const handleUseLocation = () => {
     if (!useMyLocation) {
-      // Set location immediately with default Johannesburg coords, then update with precise GPS
-      const defaultJoziCoords = { x: 50, y: 50 }; // Center of Joburg
-      setMyCoords(defaultJoziCoords);
-      setUseMyLocation(true);
-      setOrigin('');
-      onLocationUpdate(defaultJoziCoords);
-      
-      // Then try to get precise GPS in background
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const { latitude: lat, longitude: lng } = pos.coords;
           const x = ((lng - 27.9) / 0.3) * 100;
           const y = (1 - (lat + 26.3) / 0.2) * 100;
-          const coords = { x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) };
-          setMyCoords(coords);
-          onLocationUpdate(coords);
+          setMyCoords({ x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) });
+          setUseMyLocation(true);
+          setOrigin('');
         },
-        () => { /* Using default location */ },
-        { enableHighAccuracy: true, timeout: 5000 }
+        (err) => {
+          console.error(err);
+          alert('Could not get precise GPS location. Ensure location services are on, Boss!');
+        },
+        { enableHighAccuracy: true }
       );
     } else {
       setUseMyLocation(false);
       setMyCoords(null);
-      onLocationUpdate(null);
     }
   };
 
@@ -190,29 +178,6 @@ const DriverDashboard: React.FC<Props> = ({
   const finishTrip = () => {
     setIsDriving(false);
     if (onTripComplete) onTripComplete();
-  };
-
-  const handleSubmitReview = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!reviewTarget || !onSubmitReview) return;
-    onSubmitReview({
-      id: `review-${Date.now()}`,
-      reviewerId: user.id,
-      reviewerName: user.name,
-      reviewerRole: UserRole.DRIVER,
-      targetId: reviewTarget.id,
-      targetName: reviewTarget.name,
-      targetRole: reviewTarget.role,
-      rating: reviewRating,
-      comment: reviewComment,
-      timestamp: Date.now()
-    });
-    setShowReviewModal(false);
-    setReviewTarget(null);
-    setReviewRating(5);
-    setReviewComment('');
-    addPoints(10);
-    alert('Review submitted! +10 points');
   };
 
   const handleDriverAlert = (type: ChatMessage['alertType'], baseMsg: string) => {
@@ -314,7 +279,7 @@ const DriverDashboard: React.FC<Props> = ({
           <button onClick={() => setShowPriceBoard(true)} className="p-3 rounded-2xl border-2 border-black bg-blue-900 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-1">
             <Banknote size={20} />
           </button>
-          <button data-testid="driver-comms-btn" onClick={() => setShowChat(!showChat)} className={`p-3 rounded-2xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 transition-all ${showChat ? 'bg-yellow-400 text-black' : 'bg-blue-900 text-white'}`}>
+          <button onClick={() => setShowChat(!showChat)} className={`p-3 rounded-2xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 transition-all ${showChat ? 'bg-yellow-400 text-black' : 'bg-blue-900 text-white'}`}>
             <MessageCircle size={20} />
           </button>
         </div>
@@ -347,54 +312,37 @@ const DriverDashboard: React.FC<Props> = ({
         </div>
       )}
 
-      {showChat && (
-        <div className="bg-white p-6 rounded-[2.5rem] border-4 border-black shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] animate-in slide-in-from-top-4 fixed inset-x-5 top-24 bottom-24 z-[100] flex flex-col">
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="font-black text-lg uppercase italic tracking-tighter flex items-center gap-2"><MessageCircle size={20} className="text-blue-500" /> COMMS HUB</h3>
-            <button onClick={() => setShowChat(false)} className="text-gray-400 hover:text-black"><X size={20}/></button>
-          </div>
-          <div className="flex gap-1 bg-gray-100 p-1 rounded-xl mb-4">
-            <button onClick={() => setChatChannel('DRIVERS')} className={`flex-1 px-3 py-2 rounded-lg text-[9px] font-black uppercase transition-all ${chatChannel === 'DRIVERS' ? 'bg-blue-600 text-white' : 'text-gray-400'}`}>DRIVERS</button>
-            <button onClick={() => setChatChannel('MARSHALS')} className={`flex-1 px-3 py-2 rounded-lg text-[9px] font-black uppercase transition-all ${chatChannel === 'MARSHALS' ? 'bg-orange-600 text-white' : 'text-gray-400'}`}>MARSHALS</button>
-            <button onClick={() => setChatChannel('PASSENGERS')} className={`flex-1 px-3 py-2 rounded-lg text-[9px] font-black uppercase transition-all ${chatChannel === 'PASSENGERS' ? 'bg-green-600 text-white' : 'text-gray-400'}`}>PASSENGERS</button>
-          </div>
-          <div ref={chatScrollRef} className="flex-1 overflow-y-auto space-y-3 no-scrollbar mb-4 flex flex-col-reverse">
-            {filteredMessages.length === 0 ? (
-              <div className="text-center text-gray-400 py-8">
-                <MessageCircle size={32} className="mx-auto mb-2 opacity-30" />
-                <p className="text-[10px] font-black uppercase">No messages yet in {chatChannel}</p>
+      <div className="flex-1 overflow-y-auto no-scrollbar space-y-6 pb-20">
+        {showChat ? (
+          <div className="bg-white p-6 rounded-[2.5rem] border-4 border-black shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] animate-in slide-in-from-top-4 flex flex-col h-[400px]">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-black text-lg uppercase italic tracking-tighter flex items-center gap-2"><MessageCircle size={20} className="text-blue-500" /> COMMS HUB</h3>
+              <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+                <button onClick={() => setChatChannel('DRIVERS')} className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase transition-all ${chatChannel === 'DRIVERS' ? 'bg-blue-600 text-white' : 'text-gray-400'}`}>DRIVERS</button>
+                <button onClick={() => setChatChannel('MARSHALS')} className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase transition-all ${chatChannel === 'MARSHALS' ? 'bg-orange-600 text-white' : 'text-gray-400'}`}>MARSHALS</button>
+                <button onClick={() => setChatChannel('PASSENGERS')} className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase transition-all ${chatChannel === 'PASSENGERS' ? 'bg-green-600 text-white' : 'text-gray-400'}`}>PASSENGERS</button>
               </div>
-            ) : (
-              filteredMessages.slice().reverse().map(msg => (
+            </div>
+            <div ref={chatScrollRef} className="flex-1 overflow-y-auto space-y-3 no-scrollbar mb-4 flex flex-col-reverse">
+              {filteredMessages.slice().reverse().map(msg => (
                 <div key={msg.id} className={`p-3 rounded-2xl border-2 ${msg.isAlert ? 'bg-red-50 border-red-500' : msg.senderId === user.id ? 'bg-blue-50 border-blue-200 ml-4' : 'bg-gray-50 border-black/5 mr-4'}`}>
                   <div className="flex justify-between items-center mb-1">
-                    <span className={`text-[8px] font-black uppercase tracking-widest ${msg.role === UserRole.DRIVER ? 'text-blue-600' : msg.role === UserRole.MARSHAL ? 'text-orange-600' : 'text-green-600'}`}>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-blue-600">
                       {msg.senderName} {msg.rankTag ? `(@ ${msg.rankTag})` : ''}
-                      <span className="text-gray-400 ml-1">• {msg.role === UserRole.DRIVER ? 'DRIVER' : msg.role === UserRole.MARSHAL ? 'MARSHAL' : 'PASSENGER'}</span>
                     </span>
                     <span className="text-[7px] text-gray-400 font-bold">{new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                   </div>
                   <p className="text-xs font-bold leading-tight">{msg.content}</p>
-                  {msg.role === UserRole.PASSENGER && msg.senderId !== user.id && onSubmitReview && (
-                    <button 
-                      onClick={() => { setReviewTarget({id: msg.senderId, name: msg.senderName, role: UserRole.PASSENGER}); setShowReviewModal(true); }}
-                      className="text-[8px] font-black text-green-500 uppercase mt-1 hover:underline"
-                    >
-                      Review Passenger →
-                    </button>
-                  )}
                 </div>
-              ))
-            )}
+              ))}
+            </div>
+            <form onSubmit={sendTextMsg} className="flex gap-2">
+              <input type="text" value={chatInput} onChange={(e) => setChatInput(e.target.value)} placeholder={`Message ${chatChannel.toLowerCase()}...`} className="flex-1 bg-gray-50 border-2 border-black rounded-xl px-4 py-2 font-black text-xs outline-none"/>
+              <button type="submit" className="bg-black text-white p-2 rounded-xl border-2 border-black active:scale-95"><Send size={18} /></button>
+            </form>
           </div>
-          <form onSubmit={sendTextMsg} className="flex gap-2">
-            <input type="text" value={chatInput} onChange={(e) => setChatInput(e.target.value)} placeholder={`Message ${chatChannel.toLowerCase()}...`} className="flex-1 bg-gray-50 border-2 border-black rounded-xl px-4 py-2 font-black text-xs outline-none"/>
-            <button type="submit" className="bg-black text-white p-2 rounded-xl border-2 border-black active:scale-95"><Send size={18} /></button>
-          </form>
-        </div>
-      )}
-
-      <div className="flex-1 overflow-y-auto no-scrollbar space-y-6 pb-20">
+        ) : (
+          <>
             {isDriving && (
               <div className="bg-black text-yellow-400 p-5 rounded-[2rem] border-4 border-yellow-400 shadow-xl animate-in slide-in-from-top-4">
                 <div className="flex items-center justify-between mb-3 text-[8px] font-black uppercase italic tracking-widest">
@@ -561,48 +509,11 @@ const DriverDashboard: React.FC<Props> = ({
               </div>
             </div>
             <ReferralRewards userId={user.id} onReferral={() => addPoints(POINT_VALUES.AFFILIATE_SHARE)} />
+          </>
+        )}
       </div>
-
-      {/* Review Modal */}
-      {showReviewModal && reviewTarget && (
-        <div className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6">
-          <div className="bg-white w-full max-w-sm rounded-[2rem] border-4 border-black shadow-[10px_10px_0_0_rgba(0,0,0,1)] p-6">
-            <h3 className="font-black text-lg uppercase italic tracking-tighter mb-4">Review {reviewTarget.name}</h3>
-            <form onSubmit={handleSubmitReview} className="space-y-4">
-              <div>
-                <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest block mb-2">Rating</label>
-                <div className="flex gap-2">
-                  {[1, 2, 3, 4, 5].map(star => (
-                    <button
-                      key={star}
-                      type="button"
-                      onClick={() => setReviewRating(star)}
-                      className={`w-10 h-10 rounded-xl border-2 border-black flex items-center justify-center ${star <= reviewRating ? 'bg-yellow-400 text-black' : 'bg-gray-100 text-gray-400'}`}
-                    >
-                      <Star size={18} fill={star <= reviewRating ? 'currentColor' : 'none'} />
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest block mb-2">Comment (Optional)</label>
-                <textarea 
-                  value={reviewComment}
-                  onChange={(e) => setReviewComment(e.target.value)}
-                  placeholder="Share your experience..."
-                  className="w-full p-3 bg-gray-50 border-2 border-black rounded-xl font-bold text-sm resize-none h-20"
-                />
-              </div>
-              <div className="flex gap-2">
-                <button type="button" onClick={() => setShowReviewModal(false)} className="flex-1 py-3 rounded-xl border-2 border-black font-black uppercase text-xs bg-gray-100">Cancel</button>
-                <button type="submit" className="flex-1 py-3 rounded-xl border-2 border-black font-black uppercase text-xs bg-blue-500 text-white shadow-[3px_3px_0_0_rgba(0,0,0,1)]">Submit</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
 
-export default React.memo(DriverDashboard);
+export default DriverDashboard;

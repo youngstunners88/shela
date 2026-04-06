@@ -12,8 +12,4 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  server: {
-    // SECURITY FIX: Restrict allowed hosts instead of allowing all
-    allowedHosts: ['localhost', '127.0.0.1', 'bhubezi.co.za'],
-  },
 });

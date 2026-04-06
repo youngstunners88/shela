@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import type { UserProfile, SocialPost } from '../types';
 import { useContentModeration } from '../hooks/useContentModeration';
 import { Send, User as UserIcon, MessageSquare, ThumbsUp, Shield, Sparkles, Image as ImageIcon, X, AlertTriangle, CornerDownRight, Mic, Square } from 'lucide-react';
@@ -9,7 +9,7 @@ interface Props {
   posts: SocialPost[];
   onLikePost: (postId: string) => void;
   onReplyPost: (postId: string, content: string) => void;
-  onCreatePost: (content: string, isAnonymous: boolean, image?: string, voiceNote?: string) => void;
+  onCreatePost: (content: string, isAnonymous: boolean, image?: string) => void;
 }
 
 const SocialFeed: React.FC<Props> = ({ user, addPoints, posts, onLikePost, onReplyPost, onCreatePost }) => {
@@ -28,16 +28,6 @@ const SocialFeed: React.FC<Props> = ({ user, addPoints, posts, onLikePost, onRep
   
   const { containsLinks } = useContentModeration();
 
-  // Cleanup on component unmount
-  useEffect(() => {
-    return () => {
-      if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
-      if (mediaRecorderRef.current?.state === 'recording') {
-        mediaRecorderRef.current.stop();
-      }
-    };
-  }, []);
-
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -55,30 +45,9 @@ const SocialFeed: React.FC<Props> = ({ user, addPoints, posts, onLikePost, onRep
   };
 
   const startRecording = async () => {
-    // Check if MediaRecorder is supported
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      alert('Voice recording is not supported in this browser. Please use Chrome, Firefox, or Safari.');
-      return;
-    }
-
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      
-      // Check supported MIME types
-      let mimeType = 'audio/webm';
-      if (!MediaRecorder.isTypeSupported('audio/webm')) {
-        if (MediaRecorder.isTypeSupported('audio/mp4')) {
-          mimeType = 'audio/mp4';
-        } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
-          mimeType = 'audio/ogg';
-        } else {
-          mimeType = '';
-        }
-      }
-      
-      const mediaRecorder = mimeType 
-        ? new MediaRecorder(stream, { mimeType })
-        : new MediaRecorder(stream);
+      const mediaRecorder = new MediaRecorder(stream);
       const audioChunks: Blob[] = [];
       
       mediaRecorder.ondataavailable = (e) => {
@@ -86,23 +55,22 @@ const SocialFeed: React.FC<Props> = ({ user, addPoints, posts, onLikePost, onRep
       };
       
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunks, { type: mimeType || 'audio/webm' });
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
         const audioUrl = URL.createObjectURL(audioBlob);
         setVoiceNote(audioUrl);
         stream.getTracks().forEach(track => track.stop());
       };
       
       mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start(100);
-      
-      // Set recording state AFTER successful start
+      mediaRecorder.start();
       setIsRecording(true);
       setRecordingTime(0);
+      
       recordingIntervalRef.current = setInterval(() => {
         setRecordingTime(t => t + 1);
       }, 1000);
-    } catch {
-      alert('Could not access microphone. Please allow microphone access in your browser settings.');
+    } catch (err) {
+      alert('Could not access microphone. Please allow microphone access.');
     }
   };
 
@@ -132,7 +100,8 @@ const SocialFeed: React.FC<Props> = ({ user, addPoints, posts, onLikePost, onRep
     }
     
     // Create post with voice note if available
-    onCreatePost(newPost, isAnonymous, selectedImage || undefined, voiceNote || undefined);
+    const postContent = voiceNote ? `[VOICE NOTE] ${newPost}` : newPost;
+    onCreatePost(postContent, isAnonymous, selectedImage || undefined);
     setNewPost('');
     setSelectedImage(null);
     setVoiceNote(null);
@@ -263,7 +232,6 @@ const SocialFeed: React.FC<Props> = ({ user, addPoints, posts, onLikePost, onRep
               className="hidden"
             />
             <button
-              data-testid="voice-note-btn"
               type="button"
               onClick={isRecording ? stopRecording : startRecording}
               disabled={!!voiceNote}
@@ -303,17 +271,6 @@ const SocialFeed: React.FC<Props> = ({ user, addPoints, posts, onLikePost, onRep
               )}
             </div>
             <p className="font-black text-lg text-gray-800 mb-4 leading-tight italic tracking-tight">&quot;{post.content}&quot;</p>
-            {post.voiceNote && (
-              <div className="mb-5 p-4 bg-blue-50 border-2 border-blue-400 rounded-2xl flex items-center gap-3">
-                <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center shrink-0">
-                  <Mic size={22} className="text-white" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-[10px] font-black uppercase text-blue-700 mb-1">VOICE NOTE</p>
-                  <audio src={post.voiceNote} controls className="w-full h-10" />
-                </div>
-              </div>
-            )}
             {post.type === 'TAXI_WASH' && post.washPhotos && (
               <div className="grid grid-cols-3 gap-2 mb-5">
                 <div className="aspect-square rounded-xl overflow-hidden border-2 border-black/5"><img src={post.washPhotos.front} className="w-full h-full object-cover grayscale" /></div>
@@ -374,4 +331,4 @@ const SocialFeed: React.FC<Props> = ({ user, addPoints, posts, onLikePost, onRep
   );
 };
 
-export default React.memo(SocialFeed);
+export default SocialFeed;

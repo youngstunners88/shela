@@ -198,7 +198,6 @@ export interface SocialPost {
   likedBy: string[];
   replies: SocialReply[];
   image?: string;
-  voiceNote?: string;
   type?: 'GENERAL' | 'TAXI_WASH';
   washPhotos?: {
     front: string;

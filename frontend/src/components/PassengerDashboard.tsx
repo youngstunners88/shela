@@ -1,9 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 import type { UserProfile, RoutePath, ActivePing, RankStatus, TrafficLevel, DriverStatus, MarshalInfo, ChatMessage, Review } from '../types';
 import { UserRole } from '../types';
 import { TAXI_RANKS, POINT_VALUES } from '../constants';
-import { Navigation, Bell, MapPin, Car, Target, Clock, Banknote, LocateFixed, CheckCircle2, UserCheck, Users, X, Activity, Type, ChevronLeft, TrendingUp, Star, Trophy, MessageCircle, Send, User, Search } from 'lucide-react';
+import { Navigation, Bell, MapPin, Car, Target, Clock, Banknote, LocateFixed, CheckCircle2, UserCheck, Users, X, Activity, Type, ChevronLeft, TrendingUp, Star, Trophy, MessageCircle, Send, Shield, User, Search } from 'lucide-react';
 import RouteMap from './RouteMap';
 import ReferralRewards from './ReferralRewards';
 
@@ -50,13 +49,13 @@ const PassengerDashboard: React.FC<Props> = ({ user, addPoints, routes, onPing, 
   const [showComms, setShowComms] = useState(false);
   const [chatInput, setChatInput] = useState('');
   const [selectedMarshalId, setSelectedMarshalId] = useState<string>('');
+  const [showMarshalSelect, setShowMarshalSelect] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewTarget, setReviewTarget] = useState<{id: string, name: string, role: typeof UserRole[keyof typeof UserRole]} | null>(null);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
   const [showCompetingDrivers, setShowCompetingDrivers] = useState(true);
   const [priceSearch, setPriceSearch] = useState('');
-  const [chatChannel, setChatChannel] = useState<'DRIVERS' | 'MARSHALS' | 'PASSENGERS'>('PASSENGERS');
   
   // Use activePings to get current ping info
   const currentPingInfo = useMemo(() => {
@@ -101,26 +100,17 @@ const PassengerDashboard: React.FC<Props> = ({ user, addPoints, routes, onPing, 
 
   const handleUseLocation = () => {
     if (!useMyLocation) {
-      // Set location immediately with default Johannesburg coords, then update with precise GPS
-      const defaultJoziCoords = { x: 50, y: 50 }; // Center of Joburg
-      setMyCoords(defaultJoziCoords);
-      setUseMyLocation(true);
-      setSelectedRank('');
-      
-      // Then try to get precise GPS in background
-      if (!navigator.geolocation) {
-        console.log('Geolocation not supported');
-        return;
-      }
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const { latitude: lat, longitude: lng } = pos.coords;
           const x = ((lng - 27.9) / 0.3) * 100;
           const y = (1 - (lat + 26.3) / 0.2) * 100;
           setMyCoords({ x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) });
+          setUseMyLocation(true);
+          setSelectedRank('');
         },
-        () => { /* Using default location */ },
-        { enableHighAccuracy: true, timeout: 5000 }
+        (_err) => { alert('Could not get precise GPS location.'); },
+        { enableHighAccuracy: true }
       );
     } else {
       setUseMyLocation(false);
@@ -131,7 +121,7 @@ const PassengerDashboard: React.FC<Props> = ({ user, addPoints, routes, onPing, 
   const pingTaxi = () => {
     if (!destinationRank && !useCustomDest) return alert('Select destination first!');
     setIsWaiting(true);
-    const pingId = uuidv4().slice(0, 9); // SECURITY FIX: Using uuid instead of Math.random()
+    const pingId = Math.random().toString(36).substr(2, 9);
     onPing({ id: pingId, passengerId: user.id, passengerName: user.name, rankId: selectedRank || undefined, customCoords: myCoords || undefined, isCustom: useMyLocation, timestamp: Date.now() });
     setCurrentPingId(pingId);
   };
@@ -152,16 +142,19 @@ const PassengerDashboard: React.FC<Props> = ({ user, addPoints, routes, onPing, 
     return marshals.filter(m => m.rankId === selectedRank && m.isOnline);
   }, [marshals, selectedRank]);
 
-  // Get filtered messages for passenger - strictly by selected channel
+  // Get filtered messages for passenger
   const filteredMessages = useMemo(() => {
-    return messages.filter(m => m.channel === chatChannel);
-  }, [messages, chatChannel]);
+    return messages.filter(m => 
+      m.channel === 'PASSENGERS' || 
+      (m.rankTag && selectedRank && TAXI_RANKS.find(r => r.id === selectedRank)?.name === m.rankTag)
+    );
+  }, [messages, selectedRank]);
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim() || !onSendMessage) return;
     const rankName = selectedRank ? TAXI_RANKS.find(r => r.id === selectedRank)?.name : undefined;
-    onSendMessage(chatInput, undefined, false, 'GENERAL', chatChannel, rankName);
+    onSendMessage(chatInput, undefined, false, 'GENERAL', 'PASSENGERS', rankName);
     setChatInput('');
   };
 
@@ -298,7 +291,7 @@ const PassengerDashboard: React.FC<Props> = ({ user, addPoints, routes, onPing, 
           <button onClick={() => setShowPriceBoard(true)} className="p-3 rounded-2xl border-2 border-black bg-green-700 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-1">
             <Banknote size={20} />
           </button>
-          <button data-testid="passenger-comms-btn" onClick={() => setShowComms(!showComms)} className={`p-3 rounded-2xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 transition-all ${showComms ? 'bg-yellow-400 text-black' : 'bg-green-700 text-white'}`}>
+          <button onClick={() => setShowComms(!showComms)} className={`p-3 rounded-2xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 transition-all ${showComms ? 'bg-yellow-400 text-black' : 'bg-green-700 text-white'}`}>
             <MessageCircle size={20} />
           </button>
         </div>
@@ -345,23 +338,28 @@ const PassengerDashboard: React.FC<Props> = ({ user, addPoints, routes, onPing, 
         )}
       </div>
 
-      {/* COMMS PANEL - Fixed overlay like driver dashboard */}
+      {/* COMMS PANEL */}
       {showComms && (
-        <div className="bg-white p-6 rounded-[2.5rem] border-4 border-black shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] animate-in slide-in-from-top-4 fixed inset-x-5 top-24 bottom-24 z-[100] flex flex-col">
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="font-black text-lg uppercase italic tracking-tighter flex items-center gap-2"><MessageCircle size={20} className="text-green-500" /> COMMS HUB</h3>
-            <button onClick={() => setShowComms(false)} className="text-gray-400 hover:text-black"><X size={20}/></button>
+        <div className="bg-white p-6 rounded-[2.5rem] border-4 border-black shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] animate-in slide-in-from-top-4 flex flex-col h-[400px]">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-black text-lg uppercase italic tracking-tighter flex items-center gap-2"><MessageCircle size={20} className="text-green-500" /> PASSENGER COMMS</h3>
+            <div className="flex gap-2">
+              {marshalsAtRank.length > 0 && (
+                <button 
+                  onClick={() => setShowMarshalSelect(!showMarshalSelect)}
+                  className="px-3 py-1 bg-orange-500 text-white rounded-xl text-[9px] font-black uppercase flex items-center gap-1"
+                >
+                  <Shield size={12} /> {showMarshalSelect ? 'HIDE' : 'CHOOSE MARSHAL'}
+                </button>
+              )}
+              <button onClick={() => setShowComms(false)} className="text-gray-400 hover:text-black"><X size={20}/></button>
+            </div>
           </div>
-          <div className="flex gap-1 bg-gray-100 p-1 rounded-xl mb-4">
-            <button onClick={() => setChatChannel('DRIVERS')} className={`flex-1 px-3 py-2 rounded-lg text-[9px] font-black uppercase transition-all ${chatChannel === 'DRIVERS' ? 'bg-blue-600 text-white' : 'text-gray-400'}`}>DRIVERS</button>
-            <button onClick={() => setChatChannel('MARSHALS')} className={`flex-1 px-3 py-2 rounded-lg text-[9px] font-black uppercase transition-all ${chatChannel === 'MARSHALS' ? 'bg-orange-600 text-white' : 'text-gray-400'}`}>MARSHALS</button>
-            <button onClick={() => setChatChannel('PASSENGERS')} className={`flex-1 px-3 py-2 rounded-lg text-[9px] font-black uppercase transition-all ${chatChannel === 'PASSENGERS' ? 'bg-green-600 text-white' : 'text-gray-400'}`}>PASSENGERS</button>
-          </div>
-          
-          {/* Marshal Selection - show when in MARSHALS channel */}
-          {chatChannel === 'MARSHALS' && marshalsAtRank.length > 0 && (
+
+          {/* Marshal Selection */}
+          {showMarshalSelect && marshalsAtRank.length > 0 && (
             <div className="bg-orange-50 p-4 rounded-2xl border-2 border-orange-200 mb-4">
-              <p className="text-[10px] font-black uppercase text-orange-600 mb-2">Select Marshal to Contact:</p>
+              <p className="text-[10px] font-black uppercase text-orange-600 mb-2">Select a Marshal to Communicate With:</p>
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setSelectedMarshalId('')}
@@ -388,34 +386,24 @@ const PassengerDashboard: React.FC<Props> = ({ user, addPoints, routes, onPing, 
             {filteredMessages.length === 0 ? (
               <div className="text-center text-gray-400 py-8">
                 <MessageCircle size={32} className="mx-auto mb-2 opacity-30" />
-                <p className="text-[10px] font-black uppercase">No messages yet in {chatChannel}</p>
+                <p className="text-[10px] font-black uppercase">No messages yet</p>
               </div>
             ) : (
               filteredMessages.slice().reverse().map(msg => (
                 <div key={msg.id} className={`p-3 rounded-2xl border-2 ${msg.isAlert ? 'bg-red-50 border-red-500' : msg.senderId === user.id ? 'bg-green-50 border-green-200 ml-4' : 'bg-gray-50 border-black/5 mr-4'}`}>
                   <div className="flex justify-between items-center mb-1">
-                    <span className={`text-[8px] font-black uppercase tracking-widest ${msg.role === UserRole.DRIVER ? 'text-blue-600' : msg.role === UserRole.MARSHAL ? 'text-orange-600' : 'text-green-600'}`}>
-                      {msg.senderName} {msg.rankTag ? `(@ ${msg.rankTag})` : ''} 
-                      <span className="text-gray-400 ml-1">• {msg.role === UserRole.DRIVER ? 'DRIVER' : msg.role === UserRole.MARSHAL ? 'MARSHAL' : 'PASSENGER'}</span>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-green-600">
+                      {msg.senderName} {msg.rankTag ? `(@ ${msg.rankTag})` : ''}
                     </span>
                     <span className="text-[7px] text-gray-400 font-bold">{new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                   </div>
                   <p className="text-xs font-bold leading-tight">{msg.content}</p>
-                  {/* Review buttons for drivers and marshals */}
-                  {msg.role === UserRole.MARSHAL && onSubmitReview && msg.senderId !== user.id && (
+                  {msg.role === UserRole.MARSHAL && onSubmitReview && (
                     <button 
                       onClick={() => { setReviewTarget({id: msg.senderId, name: msg.senderName, role: UserRole.MARSHAL}); setShowReviewModal(true); }}
                       className="text-[8px] font-black text-orange-500 uppercase mt-1 hover:underline"
                     >
-                      Review Marshal →
-                    </button>
-                  )}
-                  {msg.role === UserRole.DRIVER && onSubmitReview && msg.senderId !== user.id && (
-                    <button 
-                      onClick={() => { setReviewTarget({id: msg.senderId, name: msg.senderName, role: UserRole.DRIVER}); setShowReviewModal(true); }}
-                      className="text-[8px] font-black text-blue-500 uppercase mt-1 hover:underline"
-                    >
-                      Review Driver →
+                      Leave Review →
                     </button>
                   )}
                 </div>
@@ -430,7 +418,7 @@ const PassengerDashboard: React.FC<Props> = ({ user, addPoints, routes, onPing, 
                 type="text" 
                 value={chatInput} 
                 onChange={(e) => setChatInput(e.target.value)} 
-                placeholder={`Message ${chatChannel.toLowerCase()}...`} 
+                placeholder={selectedMarshalId ? `Message ${marshalsAtRank.find(m => m.id === selectedMarshalId)?.name}...` : "Message all marshals..."} 
                 className="flex-1 bg-gray-50 border-2 border-black rounded-xl px-4 py-2 font-black text-xs outline-none"
               />
               <button type="submit" className="bg-black text-white p-2 rounded-xl border-2 border-black active:scale-95"><Send size={18} /></button>
@@ -619,4 +607,4 @@ const PassengerDashboard: React.FC<Props> = ({ user, addPoints, routes, onPing, 
   );
 };
 
-export default React.memo(PassengerDashboard);
+export default PassengerDashboard;
