@@ -7,6 +7,9 @@ interface AppStoreValue {
   currentUser: User | null;
   setCurrentUser: (user: User | null) => void;
   refresh: () => Promise<void>;
+  login: (phone: string, password: string) => Promise<void>;
+  register: (name: string, phone: string, password: string, role: UserRole, vehicle?: Vehicle, selfieFile?: File) => Promise<void>;
+  logout: () => void;
   registerUser: (name: string, role: UserRole, vehicle?: Vehicle) => Promise<User>;
   createPing: (originRankId: string, destinationRankId: string, price: number, message: string) => Promise<void>;
   acceptPing: (pingId: string) => Promise<void>;
@@ -37,15 +40,41 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  useEffect(() => { refresh(); }, []);
+  // Check for existing session on mount
+  useEffect(() => { 
+    BhubeziService.getCurrentUser().then(user => {
+      if (user) setCurrentUser(user);
+    });
+    refresh(); 
+  }, []);
 
   const value = useMemo<AppStoreValue>(() => ({
     snapshot,
     currentUser,
     setCurrentUser,
     refresh,
+    login: async (phone, password) => {
+      const { user } = await BhubeziService.login(phone, password);
+      setCurrentUser(user);
+      await refresh();
+    },
+    register: async (name, phone, password, role, vehicle, selfieFile) => {
+      const { user } = await BhubeziService.register(name, phone, password, role, vehicle);
+      // If selfie provided, upload it
+      if (selfieFile && role === 'DRIVER') {
+        await BhubeziService.uploadSelfie(selfieFile);
+      }
+      setCurrentUser(user);
+      await refresh();
+    },
+    logout: () => {
+      BhubeziService.logout();
+      setCurrentUser(null);
+    },
     registerUser: async (name, role, vehicle) => {
-      const user = await BhubeziService.registerUser(name, role, vehicle);
+      const phone = `07${Math.floor(Math.random() * 100000000)}`;
+      const password = 'temp123';
+      const { user } = await BhubeziService.register(name || 'New User', phone, password, role, vehicle);
       setCurrentUser(user);
       await refresh();
       return user;
