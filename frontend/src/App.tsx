@@ -10,7 +10,7 @@ import { FeedbackHub } from './components/FeedbackHub';
 import './styles.css';
 
 function Shell() {
-  const { currentUser, snapshot } = useAppStore();
+  const { currentUser, snapshot, logout } = useAppStore();
   const [tab, setTab] = useState<'home' | 'social' | 'leaderboard' | 'feedback'>('home');
 
   const home = useMemo(() => {
@@ -33,6 +33,11 @@ function Shell() {
           </div>
         </div>
         {currentUser && <div className="user-pill">{currentUser.name} · {currentUser.points} pts</div>}
+        {currentUser && (
+          <button className="logout-btn" onClick={logout}>
+            Logout
+          </button>
+        )}
       </header>
 
       <main className="main-grid">
