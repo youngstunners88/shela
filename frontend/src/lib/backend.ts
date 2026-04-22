@@ -119,6 +119,14 @@ export const BhubeziService = {
     clearToken();
   },
 
+  // ========== PROFILE IMAGE ==========
+  async uploadProfileImage(base64Image: string): Promise<any> {
+    return await apiRequest('/auth/profile-image', {
+      method: 'POST',
+      body: JSON.stringify({ image: base64Image })
+    });
+  },
+
   // ========== SELFIE VERIFICATION ==========
   async uploadSelfie(selfieFile: File, documentFile?: File): Promise<any> {
     const formData = new FormData();

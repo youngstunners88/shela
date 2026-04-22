@@ -14,6 +14,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 import uuid
 import os
+import base64
 import logging
 from pathlib import Path
 import httpx
@@ -56,6 +57,7 @@ class User(BaseModel):
     role: str  # passenger, driver, marshal
     password_hash: Optional[str] = None
     verified: bool = False
+    profile_image: Optional[str] = None  # base64 data URI
     selfie_url: Optional[str] = None
     id_document_url: Optional[str] = None
     vehicle: Optional[Dict[str, Any]] = None
@@ -147,6 +149,9 @@ class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: Dict[str, Any]
+
+class ProfileImageUpdate(BaseModel):
+    image: str  # base64 data URI
 
 # ============== HELPER FUNCTIONS ==============
 
@@ -249,6 +254,28 @@ async def login(credentials: UserLogin):
 async def get_me(current_user: dict = Depends(get_current_user)):
     return current_user
 
+# ============== PROFILE IMAGE ==============
+
+@api_router.post("/auth/profile-image")
+async def upload_profile_image(
+    data: ProfileImageUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Store profile image as base64 in MongoDB (max ~2MB)"""
+    if not data.image.startswith("data:image"):
+        raise HTTPException(status_code=400, detail="Invalid image format")
+    
+    # Limit to ~2MB (base64 overhead ~33%)
+    if len(data.image) > 3 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image too large. Please use a photo under 2MB.")
+    
+    await db.users.update_one(
+        {"id": current_user["id"]},
+        {"$set": {"profile_image": data.image}}
+    )
+    
+    return {"success": True, "message": "Profile image saved"}
+
 # ============== SELFIE VERIFICATION ==============
 
 @api_router.post("/auth/verify-selfie")
@@ -257,37 +284,26 @@ async def verify_selfie(
     document: Optional[UploadFile] = File(None),
     current_user: dict = Depends(get_current_user)
 ):
-    """Upload selfie and ID document for verification"""
+    """Upload selfie and ID document for driver verification"""
     if current_user.get("role") != "driver":
         raise HTTPException(status_code=403, detail="Only drivers need verification")
     
-    # Save files (in production, upload to S3/Cloudinary)
-    import shutil
-    upload_dir = ROOT_DIR / "uploads"
-    upload_dir.mkdir(exist_ok=True)
+    # Read and encode selfie as base64
+    selfie_bytes = await selfie.read()
+    selfie_b64 = "data:image/jpeg;base64," + base64.b64encode(selfie_bytes).decode("utf-8")
     
-    selfie_filename = f"{current_user['id']}_selfie_{uuid.uuid4()}.jpg"
-    selfie_path = upload_dir / selfie_filename
-    
-    with open(selfie_path, "wb") as f:
-        shutil.copyfileobj(selfie.file, f)
-    
-    # If document provided, save it too
-    doc_filename = None
+    doc_b64 = None
     if document:
-        doc_filename = f"{current_user['id']}_doc_{uuid.uuid4()}.jpg"
-        doc_path = upload_dir / doc_filename
-        with open(doc_path, "wb") as f:
-            shutil.copyfileobj(document.file, f)
+        doc_bytes = await document.read()
+        doc_b64 = "data:image/jpeg;base64," + base64.b64encode(doc_bytes).decode("utf-8")
     
-    # In production: Call face recognition API to compare selfie with ID
-    # For now, mark as pending verification
     await db.users.update_one(
         {"id": current_user["id"]},
         {
             "$set": {
-                "selfie_url": f"/uploads/{selfie_filename}",
-                "id_document_url": f"/uploads/{doc_filename}" if doc_filename else None,
+                "profile_image": selfie_b64,
+                "selfie_url": selfie_b64,
+                "id_document_url": doc_b64,
                 "verification_status": "pending"
             }
         }

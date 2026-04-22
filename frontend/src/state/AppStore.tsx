@@ -27,6 +27,16 @@ interface AppStoreValue {
 
 const AppStore = createContext<AppStoreValue | null>(null);
 
+// Helper to convert File to base64 data URI
+async function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 export function AppStoreProvider({ children }: { children: React.ReactNode }) {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -60,10 +70,18 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
     },
     register: async (name, phone, password, role, vehicle, selfieFile) => {
       const { user } = await BhubeziService.register(name, phone, password, role, vehicle);
-      // If selfie provided, upload it
-      if (selfieFile && role === 'DRIVER') {
-        await BhubeziService.uploadSelfie(selfieFile);
+
+      // If image provided (for any role), convert to base64 and upload
+      if (selfieFile) {
+        try {
+          const base64 = await fileToBase64(selfieFile);
+          await BhubeziService.uploadProfileImage(base64);
+        } catch (e) {
+          console.error('Failed to upload profile image:', e);
+          // Don't block registration if image upload fails
+        }
       }
+
       setCurrentUser(user);
       await refresh();
     },

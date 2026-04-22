@@ -21,21 +21,21 @@ export function OnboardingFlow() {
   const [color, setColor] = useState('White');
   const [plate, setPlate] = useState('');
   
-  // Selfie upload
-  const [selfieFile, setSelfieFile] = useState<File | null>(null);
-  const [selfiePreview, setSelfiePreview] = useState<string | null>(null);
+  // Profile photo upload (for all roles)
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   // UI state
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSelfieChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setSelfieFile(file);
+      setPhotoFile(file);
       const reader = new FileReader();
-      reader.onloadend = () => setSelfiePreview(reader.result as string);
+      reader.onloadend = () => setPhotoPreview(reader.result as string);
       reader.readAsDataURL(file);
     }
   };
@@ -58,10 +58,6 @@ export function OnboardingFlow() {
         setError('Passwords do not match');
         return;
       }
-      if (role === 'DRIVER' && !selfieFile) {
-        setError('Selfie photo required for driver verification');
-        return;
-      }
     }
     
     setIsLoading(true);
@@ -71,7 +67,7 @@ export function OnboardingFlow() {
         await login(phone, password);
       } else {
         const vehicle = role === 'DRIVER' ? { brand, color, plate: plate || 'Unknown' } : undefined;
-        await register(name, phone, password, role, vehicle, selfieFile || undefined);
+        await register(name, phone, password, role, vehicle, photoFile || undefined);
       }
     } catch (err: any) {
       setError(err.message || 'Something went wrong');
@@ -189,11 +185,11 @@ export function OnboardingFlow() {
           </>
         )}
 
-        {/* Selfie upload for drivers */}
-        {activeTab === 'register' && role === 'DRIVER' && (
-          <div style={{ 
-            border: '2px dashed #ccc', 
-            borderRadius: '0.5rem', 
+        {/* Profile photo upload for all users during registration */}
+        {activeTab === 'register' && (
+          <div style={{
+            border: '2px dashed #ccc',
+            borderRadius: '0.5rem',
             padding: '1rem',
             textAlign: 'center',
             cursor: 'pointer'
@@ -203,21 +199,19 @@ export function OnboardingFlow() {
               type="file"
               accept="image/*"
               capture="user"
-              onChange={handleSelfieChange}
+              onChange={handlePhotoChange}
               style={{ display: 'none' }}
             />
-            {selfiePreview ? (
-              <img 
-                src={selfiePreview} 
-                alt="Selfie preview" 
+            {photoPreview ? (
+              <img
+                src={photoPreview}
+                alt="Profile photo"
                 style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover' }}
               />
             ) : (
               <div>
-                <p style={{ margin: 0, fontWeight: 500 }}>📷 Take a selfie</p>
-                <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', opacity: 0.6 }}>
-                  Required for driver verification
-                </p>
+                <p style={{ margin: 0, fontWeight: 500 }}>📷 Add a profile photo (optional)</p>
+                <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', opacity: 0.6 }}>\n                  {role === 'DRIVER' ? 'Driver verification selfie' : 'Upload a photo'}\n                </p>
               </div>
             )}
           </div>
