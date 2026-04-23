@@ -85,7 +85,7 @@ export async function detectUserPatterns(
   const ghosted = outcomes.filter((o: any) => o.safety_flag === 'ghosted').length;
   const noShow = outcomes.filter((o: any) => o.safety_flag === 'no_show').length;
   const inappropriate = outcomes.filter((o: any) => o.safety_flag === 'inappropriate_behavior').length;
-  const violations = outcomes.filter((o: any) => o.violation_type IS NOT NULL).length;
+  const violations = outcomes.filter((o: any) => o.violation_type !== null && o.violation_type !== undefined).length;
   const positiveRatings = outcomes.filter((o: any) => o.rating >= 4).length;
   
   // Calculate pattern type
