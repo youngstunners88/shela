@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  # ============== API SERVER ==============
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgres://shela:${DB_PASSWORD}@db:5432/shela
+      - SOLANA_RPC=https://api.devnet.solana.com
+      - NTIFY_TOPIC=shela-alerts
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - db
+      - redis
+    networks:
+      - shela-network
+    restart: unless-stopped
+
+  # ============== WEBSOCKET SERVER ==============
+  websocket:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.ws
+    ports:
+      - "3001:3001"
+    environment:
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
+    networks:
+      - shela-network
+    restart: unless-stopped
+
+  # ============== DATABASE ==============
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=shela
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=shela
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - shela-network
+    restart: unless-stopped
+
+  # ============== REDIS ==============
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    networks:
+      - shela-network
+    restart: unless-stopped
+
+  # ============== NGINX ==============
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - api
+      - websocket
+    networks:
+      - shela-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  shela-network:
+    driver: bridge
