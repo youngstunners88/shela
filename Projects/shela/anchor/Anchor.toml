@@ -1,0 +1,6 @@
+[features]
+seeds = false
+skip-lint = false
+
+[programs.localnet]
+shela_treasury = "TreasP8
