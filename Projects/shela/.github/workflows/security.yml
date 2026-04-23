@@ -1,0 +1,43 @@
+name: Security Audit
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 0 * * 1' # Weekly on Monday
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install Bun
+      uses: oven-sh/setup-bun@v1
+    
+    - name: Install dependencies
+      run: bun install
+    
+    - name: Audit dependencies
+      run: bun audit
+    
+    - name: Run security tests
+      run: bun test --run tests/verify.test.ts -t "Security & Privacy"
+
+  sast:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Run ESLint
+      run: |
+        bun add -d eslint @typescript-eslint/eslint-plugin @typescript-eslint/parser
+        bunx eslint src/ --ext .ts,.tsx
+    
+    - name: Check for secrets
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: main
