@@ -1,0 +1,18 @@
+[package]
+name = "shela-treasury"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anchor-lang = "0.30.0"
+anchor-spl = "0.30.0"
+
+[features]
+default = ["cpi"]
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+
+[lib]
+crate-type = ["cdylib", "lib"]
