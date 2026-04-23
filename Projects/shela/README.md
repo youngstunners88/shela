@@ -6,6 +6,28 @@
 [![React](https://img.shields.io/badge/React-61DAFB?logo=react&logoColor=black)](https://reactjs.org)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
+## The 3-Layer Architecture
+
+Shela implements the full Claude Code workspace pattern:
+
+**Layer 1 (Book):** Individual AI outputs
+- Interview agent questions
+- Stake calculations  
+- Pattern detection scores
+- [Individual prompts → outputs]
+
+**Layer 2 (Movie):** Orchestrated flows between layers
+- 5-stage state machine
+- API routes that connect verify→match→escrow→meet→learn
+- WebSocket real-time sync
+- [Flows that feel like one system]
+
+**Layer 3 (Video Game):** Systems that learn from data
+- Pattern learning updates risk weights
+- Interview prompts evolve from meet outcomes
+- Reputation scores affect future stakes
+- [Self-improving from user behavior]
+
 ## One Line
 
 "Dating apps ask: Do you like them? Shela asks: Will it be safe? Then learns."
@@ -36,6 +58,13 @@ Current dating apps:
 ┌─────────────────────────────────────────┐
 │  Mobile App (React Native)              │
 │  • Interview chat • Swipe UI • Wallet   │
+└─────────────────────────────────────────┘
+                    │
+                    ▼
+┌─────────────────────────────────────────┐
+│  Layer 2: Orchestrator (The Movie)      │
+│  • State machine • Flow routing         │
+│  • Context persistence • WebSocket sync  │
 └─────────────────────────────────────────┘
                     │
 ┌─────────────────────────────────────────┐

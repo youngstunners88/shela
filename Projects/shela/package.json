@@ -1,0 +1,43 @@
+{
+  "name": "shela",
+  "version": "1.0.0",
+  "description": "Shela - Dating safety protocol that learns. Layer 3: video game behavior, not static matching.",
+  "type": "module",
+  "main": "api/server.ts",
+  "scripts": {
+    "dev": "bun run api/server.ts",
+    "start": "bun run api/server.ts",
+    "test": "vitest run",
+    "test:stress": "vitest run tests/stress.test.ts",
+    "test:watch": "vitest",
+    "layer:verify": "vitest run tests/verify.test.ts",
+    "layer:match": "bun run 02-match/src/match-engine.ts",
+    "layer:escrow": "bun run 03-escrow/src/escrow-contract.ts",
+    "layer:meet": "bun run 04-verify-meet/src/verify-meet.ts",
+    "layer:learn": "bun run 05-learn/src/pattern-learner.ts",
+    "build": "bun build api/server.ts --outdir dist",
+    "deploy": "docker-compose up -d",
+    "lint": "tsc --noEmit",
+    "db:migrate": "bun run database/migrate.ts"
+  },
+  "dependencies": {
+    "ai": "^6.0.0",
+    "@solana/web3.js": "^1.98.0",
+    "@coral-xyz/anchor": "^0.32.0",
+    "duckdb-async": "^1.0.0",
+    "hono": "^4.0.0",
+    "ws": "^8.16.0",
+    "snarkjs": "^0.7.0",
+    "circomlibjs": "^0.1.0"
+  },
+  "devDependencies": {
+    "bun-types": "latest",
+    "vitest": "^1.0.0",
+    "@vitest/ui": "^1.0.0",
+    "typescript": "^5.0.0",
+    "@types/ws": "^8.5.0"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0"
+  }
+}
