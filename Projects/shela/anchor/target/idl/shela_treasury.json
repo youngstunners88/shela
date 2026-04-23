@@ -1,0 +1,372 @@
+{
+  "version": "0.1.0",
+  "name": "shela_treasury",
+  "instructions": [
+    {
+      "name": "initializeEscrow",
+      "accounts": [
+        {
+          "name": "escrow",
+          "isMut": true,
+          "isSigner": false,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "type": "string",
+                "value": "escrow"
+              },
+              {
+                "kind": "arg",
+                "type": "string",
+                "path": "matchId"
+              }
+            ]
+          }
+        },
+        {
+          "name": "treasuryAccount",
+          "isMut": true,
+          "isSigner": false,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "type": "string",
+                "value": "treasury"
+              },
+              {
+                "kind": "arg",
+                "type": "string",
+                "path": "matchId"
+              }
+            ]
+          }
+        },
+        {
+          "name": "initializer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "matchId",
+          "type": "string"
+        },
+        {
+          "name": "userA",
+          "type": "publicKey"
+        },
+        {
+          "name": "userB",
+          "type": "publicKey"
+        },
+        {
+          "name": "stakeAmount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "stakeUserA",
+      "accounts": [
+        {
+          "name": "escrow",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "treasuryAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "stakeUserB",
+      "accounts": [
+        {
+          "name": "escrow",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "treasuryAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "verifyAndRelease",
+      "accounts": [
+        {
+          "name": "escrow",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "treasuryAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userA",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userB",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "userAProof",
+          "type": {
+            "array": ["u8", 32]
+          }
+        },
+        {
+          "name": "userBProof",
+          "type": {
+            "array": ["u8", 32]
+          }
+        }
+      ]
+    },
+    {
+      "name": "slashNoShow",
+      "accounts": [
+        {
+          "name": "escrow",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "treasuryAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "violator",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "victim",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "violationType",
+          "type": {
+            "defined": "ViolationType"
+          }
+        },
+        {
+          "name": "slashPercentage",
+          "type": "u8"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "EscrowAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "matchId",
+            "type": "string"
+          },
+          {
+            "name": "userA",
+            "type": "publicKey"
+          },
+          {
+            "name": "userB",
+            "type": "publicKey"
+          },
+          {
+            "name": "stakeAmount",
+            "type": "u64"
+          },
+          {
+            "name": "userAStaked",
+            "type": "bool"
+          },
+          {
+            "name": "userBStaked",
+            "type": "bool"
+          },
+          {
+            "name": "userADeposit",
+            "type": "u64"
+          },
+          {
+            "name": "userBDeposit",
+            "type": "u64"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": "EscrowStatus"
+            }
+          },
+          {
+            "name": "createdAt",
+            "type": "i64"
+          },
+          {
+            "name": "treasuryBump",
+            "type": "u8"
+          },
+          {
+            "name": "violationType",
+            "type": {
+              "option": {
+                "defined": "ViolationType"
+              }
+            }
+          },
+          {
+            "name": "slashPercentage",
+            "type": {
+              "option": "u8"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "EscrowStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Pending"
+          },
+          {
+            "name": "Locked"
+          },
+          {
+            "name": "Released"
+          },
+          {
+            "name": "Slashed"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ViolationType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Ghosted"
+          },
+          {
+            "name": "NoShow"
+          },
+          {
+            "name": "InappropriateBehavior"
+          },
+          {
+            "name": "UnsafeMeet"
+          },
+          {
+            "name": "Harassment"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidEscrowStatus",
+      "msg": "Invalid escrow status for this operation"
+    },
+    {
+      "code": 6001,
+      "name": "AlreadyStaked",
+      "msg": "User has already staked"
+    },
+    {
+      "code": 6002,
+      "name": "EscrowNotLocked",
+      "msg": "Escrow is not locked"
+    },
+    {
+      "code": 6003,
+      "name": "EscrowNotFinalized",
+      "msg": "Escrow is not finalized"
+    },
+    {
+      "code": 6004,
+      "name": "TreasuryNotEmpty",
+      "msg": "Treasury account is not empty"
+    },
+    {
+      "code": 6005,
+      "name": "InsufficientTreasuryBalance",
+      "msg": "Insufficient treasury balance"
+    },
+    {
+      "code": 6006,
+      "name": "InvalidSlashPercentage",
+      "msg": "Invalid slash percentage (must be 0-100)"
+    },
+    {
+      "code": 6007,
+      "name": "InvalidViolator",
+      "msg": "Invalid violator account"
+    }
+  ]
+}
