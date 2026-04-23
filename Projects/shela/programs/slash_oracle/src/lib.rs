@@ -1,452 +1,397 @@
 use anchor_lang::prelude::*;
 
 // Shela Slash Oracle Program
-// Automated violation detection and stake slashing
+// Automated violation detection and stake slashing authority
 
-declare_id!("Slash111111111111111111111111111111111111111");
+declare_id!("Slash11111111111111111111111111111111111111");
+
+/// Violation report submitted by a user
+#[account]
+pub struct ViolationReport {
+    pub reporter: Pubkey,
+    pub reported_user: Pubkey,
+    pub match_id: String,
+    pub violation_type: ViolationType,
+    pub severity: Severity,
+    pub evidence_hash: [u8; 32], // IPFS hash or similar
+    pub submitted_at: i64,
+    pub reviewed_by: Option<Pubkey>,
+    pub review_status: ReviewStatus,
+    pub slash_percentage: u8,
+    pub compensation_amount: u64,
+    pub resolution: Option<Resolution>,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq)]
+pub enum ViolationType {
+    Ghosted,                // Stopped responding
+    NoShow,                 // Didn't show up to meet
+    InappropriateBehavior,  // Unwanted behavior
+    UnsafeMeet,             // Made meet unsafe
+    Harassment,             // Ongoing harassment
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq)]
+pub enum Severity {
+    Low,      // Minor issue
+    Medium,   // Significant issue
+    High,     // Serious violation
+    Critical, // Dangerous or repeated behavior
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq)]
+pub enum ReviewStatus {
+    Pending,      // Report submitted, awaiting review
+    Reviewing,    // Oracle or reviewer examining
+    Confirmed,    // Violation confirmed
+    Rejected,     // No violation found
+    Appealed,     // Under appeal
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq)]
+pub enum Resolution {
+    Slashed { // Stake was slashed
+        slash_tx: Pubkey,
+        timestamp: i64,
+    },
+    Dismissed { // No action taken
+        reason: String,
+        timestamp: i64,
+    },
+    Settled { // Mutual settlement
+        settlement_amount: u64,
+        timestamp: i64,
+    },
+}
 
 #[program]
-pub mod slash_oracle {
+pub mod shela_slash_oracle {
     use super::*;
-    
-    /// Initialize oracle with AI model parameters
-    pub fn initialize_oracle(
-        ctx: Context<InitializeOracle>,
-        violation_weights: Vec<ViolationWeight>,
-    ) -> Result<()> {
-        let oracle = &mut ctx.accounts.oracle;
-        oracle.authority = ctx.accounts.authority.key();
-        oracle.violation_weights = violation_weights;
-        oracle.total_reports_processed = 0;
-        oracle.total_sol_slashed = 0;
-        oracle.created_at = Clock::get()?.unix_timestamp;
-        oracle.is_active = true;
-        Ok(())
-    }
-    
-    /// Submit violation report with evidence
+
+    /// Submit a violation report
     pub fn submit_report(
         ctx: Context<SubmitReport>,
         match_id: String,
         violation_type: ViolationType,
+        severity: Severity,
         evidence_hash: [u8; 32],
-        evidence_url: String,
         description: String,
     ) -> Result<()> {
-        require!(description.len() <= 1000, ErrorCode::DescriptionTooLong);
-        
         let report = &mut ctx.accounts.report;
-        report.id = ctx.accounts.oracle.total_reports_processed + 1;
-        report.match_id = match_id;
-        report.violation_type = violation_type;
-        report.evidence_hash = evidence_hash;
-        report.evidence_url = evidence_url;
-        report.description = description;
+        
         report.reporter = ctx.accounts.reporter.key();
         report.reported_user = ctx.accounts.reported_user.key();
-        report.created_at = Clock::get()?.unix_timestamp;
-        report.status = ReportStatus::PendingReview;
-        report.ai_confidence = 0; // Will be updated by oracle
-        report.recommended_slash_bps = 0; // Basis points (0-10000 = 0-100%)
-        report.is_appealed = false;
-        report.human_reviewed = false;
-        
-        // Update oracle counter
-        ctx.accounts.oracle.total_reports_processed += 1;
-        
-        // Emit event for oracle processing
-        emit!(ViolationReported {
-            report_id: report.id,
-            match_id: report.match_id.clone(),
-            violation_type: violation_type,
-            reporter: ctx.accounts.reporter.key(),
-            reported_user: ctx.accounts.reported_user.key(),
-        });
-        
+        report.match_id = match_id.clone();
+        report.violation_type = violation_type;
+        report.severity = severity;
+        report.evidence_hash = evidence_hash;
+        report.submitted_at = Clock::get()?.unix_timestamp;
+        report.reviewed_by = None;
+        report.review_status = ReviewStatus::Pending;
+        report.slash_percentage = 0;
+        report.compensation_amount = 0;
+        report.resolution = None;
+
+        // Auto-calculate preliminary slash (final determined by oracle)
+        let preliminary = calculate_preliminary_slash(&violation_type, &severity, 0);
+        report.slash_percentage = preliminary.slash_percentage;
+        report.compensation_amount = preliminary.compensation_amount;
+
+        msg!(
+            "Violation report submitted for match: {}, type: {:?}, severity: {:?}",
+            match_id,
+            violation_type,
+            severity
+        );
         Ok(())
     }
-    
-    /// Oracle processes report with AI analysis
-    pub fn process_report(
-        ctx: Context<ProcessReport>,
-        ai_confidence: u16, // 0-10000 (0-100%)
-        recommended_slash_bps: u16,
-        reasoning_hash: [u8; 32],
+
+    /// Review a report (called by authorized oracle/reviewer)
+    pub fn review_report(
+        ctx: Context<ReviewReport>,
+        slash_percentage: u8,
+        compensation_percentage: u8, // % of slash that goes to victim
     ) -> Result<()> {
-        let oracle = &ctx.accounts.oracle;
-        require!(oracle.is_active, ErrorCode::OracleInactive);
-        require!(
-            ctx.accounts.authority.key() == oracle.authority,
-            ErrorCode::Unauthorized
-        );
-        
+        require!(slash_percentage <= 100, OracleError::InvalidSlashPercentage);
+        require!(compensation_percentage <= 100, OracleError::InvalidCompensationPercentage);
+
         let report = &mut ctx.accounts.report;
-        require!(report.status == ReportStatus::PendingReview, ErrorCode::AlreadyProcessed);
         
-        // Validate confidence bounds
-        require!(ai_confidence <= 10000, ErrorCode::InvalidConfidence);
-        require!(recommended_slash_bps <= 10000, ErrorCode::InvalidSlashAmount);
+        report.reviewed_by = Some(ctx.accounts.reviewer.key());
+        report.review_status = ReviewStatus::Confirmed;
+        report.slash_percentage = slash_percentage;
         
-        // Apply violation weight from oracle config
-        let base_slash = recommended_slash_bps;
-        let weight = oracle.violation_weights.iter()
-            .find(|w| w.violation_type == report.violation_type)
-            .map(|w| w.weight_bps)
-            .unwrap_or(5000); // Default 50%
+        // Store compensation percentage for later calculation
+        msg!(
+            "Report reviewed: {}% slash, {}% compensation",
+            slash_percentage,
+            compensation_percentage
+        );
+
+        Ok(())
+    }
+
+    /// Record a slash resolution (called after treasury executes slash)
+    pub fn record_resolution(
+        ctx: Context<RecordResolution>,
+        resolution: Resolution,
+    ) -> Result<()> {
+        let report = &mut ctx.accounts.report;
         
-        let adjusted_slash = (base_slash as u64 * weight as u64 / 10000) as u16;
+        report.resolution = Some(resolution);
         
-        report.ai_confidence = ai_confidence;
-        report.recommended_slash_bps = adjusted_slash.min(10000);
-        
-        // Auto-approve high confidence, flag for human review low confidence
-        if ai_confidence >= 8500 { // 85%+
-            report.status = ReportStatus::Approved;
-        } else if ai_confidence >= 6000 { // 60-85%
-            report.status = ReportStatus::AwaitingHumanReview;
-        } else {
-            report.status = ReportStatus::InsufficientEvidence;
+        match resolution {
+            Resolution::Slashed { slash_tx, .. } => {
+                msg!("Slash recorded: tx {}", slash_tx);
+            }
+            Resolution::Dismissed { reason, .. } => {
+                report.review_status = ReviewStatus::Rejected;
+                msg!("Dismissed: {}", reason);
+            }
+            Resolution::Settled { settlement_amount, .. } => {
+                msg!("Settled for {} lamports", settlement_amount);
+            }
         }
-        
-        report.oracle_processed_at = Some(Clock::get()?.unix_timestamp);
-        
-        emit!(ReportProcessed {
-            report_id: report.id,
-            ai_confidence,
-            recommended_slash_bps: adjusted_slash,
-            status: report.status,
-        });
-        
+
         Ok(())
     }
-    
-    /// Human reviewer confirms or rejects AI recommendation
-    pub fn human_review(
-        ctx: Context<HumanReview>,
-        approved: bool,
-        final_slash_bps: u16,
-        notes: String,
-    ) -> Result<()> {
-        let oracle = &ctx.accounts.oracle;
-        require!(
-            ctx.accounts.reviewer.key() == oracle.authority ||
-            oracle.human_reviewers.contains(&ctx.accounts.reviewer.key()),
-            ErrorCode::UnauthorizedReviewer
+
+    /// Get user's violation history
+    pub fn get_violation_history(
+        ctx: Context<GetViolationHistory>,
+    ) -> Result<(u32, u32, u32)> {
+        let user = &ctx.accounts.user_account;
+        
+        // Count by severity
+        let critical = user.critical_violations;
+        let high = user.high_violations;
+        let total = user.total_violations;
+
+        msg!(
+            "User {}: {} total, {} high, {} critical",
+            ctx.accounts.user.key(),
+            total,
+            high,
+            critical
         );
+
+        Ok((total, high, critical))
+    }
+
+    /// Calculate risk multiplier based on violation history
+    pub fn calculate_risk_multiplier(
+        ctx: Context<GetViolationHistory>,
+    ) -> Result<u8> {
+        let user = &ctx.accounts.user_account;
         
-        let report = &mut ctx.accounts.report;
-        require!(
-            report.status == ReportStatus::AwaitingHumanReview ||
-            report.status == ReportStatus::PendingReview,
-            ErrorCode::InvalidReviewState
+        let multiplier = calculate_multiplier(
+            user.total_violations,
+            user.high_violations,
+            user.critical_violations,
         );
-        
-        report.human_reviewed = true;
-        report.human_reviewer = Some(ctx.accounts.reviewer.key());
-        report.human_reviewed_at = Some(Clock::get()?.unix_timestamp);
-        report.review_notes = Some(notes);
-        
-        if approved {
-            report.status = ReportStatus::Approved;
-            report.final_slash_bps = final_slash_bps;
-        } else {
-            report.status = ReportStatus::Rejected;
-            report.final_slash_bps = 0;
-        }
-        
-        emit!(HumanReviewCompleted {
-            report_id: report.id,
-            approved,
-            final_slash_bps,
-            reviewer: ctx.accounts.reviewer.key(),
-        });
-        
-        Ok(())
+
+        msg!("Risk multiplier for user: {}x", multiplier);
+        Ok(multiplier)
     }
-    
-    /// Execute approved slash
-    pub fn execute_slash(
-        ctx: Context<ExecuteSlash>,
-        escrow_address: Pubkey,
-    ) -> Result<()> {
-        let report = &ctx.accounts.report;
-        require!(report.status == ReportStatus::Approved, ErrorCode::NotApproved);
-        require!(!report.executed, ErrorCode::AlreadyExecuted);
-        
-        // Mark as executed
-        ctx.accounts.report.executed = true;
-        ctx.accounts.report.executed_at = Some(Clock::get()?.unix_timestamp);
-        ctx.accounts.report.escrow_executed = Some(escrow_address);
-        
-        // Update oracle stats
-        ctx.accounts.oracle.total_sol_slashed += 1; // Count, not amount
-        
-        emit!(SlashExecuted {
-            report_id: report.id,
-            escrow_address,
-            slash_bps: report.final_slash_bps,
-        });
-        
-        Ok(())
-    }
-    
-    /// Appeal a rejected or slashed report
-    pub fn submit_appeal(
-        ctx: Context<SubmitAppeal>,
-        appeal_reason: String,
-        new_evidence_hash: Option<[u8; 32]>,
+
+    /// Appeal a decision (initiates DAO/community review)
+    pub fn appeal_report(
+        ctx: Context<AppealReport>,
+        reason: String,
     ) -> Result<()> {
         let report = &mut ctx.accounts.report;
+        
         require!(
-            report.status == ReportStatus::Rejected ||
-            report.status == ReportStatus::Approved,
-            ErrorCode::CannotAppeal
+            report.review_status == ReviewStatus::Confirmed,
+            OracleError::CannotAppeal
         );
-        require!(!report.is_appealed, ErrorCode::AlreadyAppealed);
-        
-        report.is_appealed = true;
-        report.appeal_reason = Some(appeal_reason);
-        report.appeal_evidence_hash = new_evidence_hash;
-        report.appealed_at = Some(Clock::get()?.unix_timestamp);
-        report.status = ReportStatus::UnderAppeal;
-        
-        emit!(AppealSubmitted {
-            report_id: report.id,
-            appealed_by: ctx.accounts.appellant.key(),
-        });
-        
+
+        // In production: would trigger DAO vote
+        report.review_status = ReviewStatus::Appealed;
+
+        msg!("Appeal submitted: {}", reason);
         Ok(())
     }
 }
 
-#[derive(Accounts)]
-pub struct InitializeOracle<'info> {
-    #[account(init, payer = authority, space = 8 + OracleAccount::MAX_SIZE)]
-    pub oracle: Account<'info, OracleAccount>,
-    #[account(mut)]
-    pub authority: Signer<'info>,
-    pub system_program: Program<'info, System>,
+/// Calculate preliminary slash based on violation type and severity
+pub fn calculate_preliminary_slash(
+    violation_type: &ViolationType,
+    severity: &Severity,
+    prior_violations: u32,
+) -> PreliminarySlash {
+    let base_slash = match (violation_type, severity) {
+        // Ghosting
+        (ViolationType::Ghosted, Severity::Low) => 10,
+        (ViolationType::Ghosted, Severity::Medium) => 25,
+        (ViolationType::Ghosted, Severity::High) => 50,
+        (ViolationType::Ghosted, Severity::Critical) => 75,
+        
+        // No-show
+        (ViolationType::NoShow, Severity::Low) => 15,
+        (ViolationType::NoShow, Severity::Medium) => 30,
+        (ViolationType::NoShow, Severity::High) => 60,
+        (ViolationType::NoShow, Severity::Critical) => 80,
+        
+        // Inappropriate behavior
+        (ViolationType::InappropriateBehavior, Severity::Low) => 20,
+        (ViolationType::InappropriateBehavior, Severity::Medium) => 40,
+        (ViolationType::InappropriateBehavior, Severity::High) => 70,
+        (ViolationType::InappropriateBehavior, Severity::Critical) => 90,
+        
+        // Unsafe meet
+        (ViolationType::UnsafeMeet, Severity::Low) => 30,
+        (ViolationType::UnsafeMeet, Severity::Medium) => 50,
+        (ViolationType::UnsafeMeet, Severity::High) => 80,
+        (ViolationType::UnsafeMeet, Severity::Critical) => 100,
+        
+        // Harassment
+        (ViolationType::Harassment, Severity::Low) => 40,
+        (ViolationType::Harassment, Severity::Medium) => 60,
+        (ViolationType::Harassment, Severity::High) => 85,
+        (ViolationType::Harassment, Severity::Critical) => 100,
+    };
+
+    // Escalation: +10% per prior violation (max 50%)
+    let escalation = (prior_violations * 10).min(50) as u8;
+    let total = (base_slash + escalation).min(100);
+
+    // Compensation: 50% of slash to victim
+    let compensation_percentage = 50u8;
+
+    PreliminarySlash {
+        slash_percentage: total,
+        compensation_percentage,
+        compensation_amount: (total as u64 * compensation_percentage as u64) / 100,
+    }
 }
 
+/// Calculate risk multiplier based on violation history
+pub fn calculate_multiplier(
+    total: u32,
+    high: u32,
+    critical: u32,
+) -> u8 {
+    if critical > 0 {
+        return 4; // 4x multiplier
+    }
+    if high > 1 {
+        return 3; // 3x multiplier
+    }
+    if total > 3 {
+        return 2; // 2x multiplier
+    }
+    if total > 0 {
+        return 15; // 1.5x (15/10)
+    }
+    10 // 1.0x baseline (10/10)
+}
+
+pub struct PreliminarySlash {
+    pub slash_percentage: u8,
+    pub compensation_percentage: u8,
+    pub compensation_amount: u64,
+}
+
+// Account structures
 #[derive(Accounts)]
 pub struct SubmitReport<'info> {
     #[account(
         init,
         payer = reporter,
-        space = 8 + ViolationReport::MAX_SIZE
+        space = 8 + ViolationReport::SIZE,
+        seeds = [b"report", match_id.as_bytes(), reporter.key().as_ref()],
+        bump
     )]
     pub report: Account<'info, ViolationReport>,
-    #[account(mut)]
-    pub oracle: Account<'info, OracleAccount>,
+    
     #[account(mut)]
     pub reporter: Signer<'info>,
-    /// CHECK: This is just the reported user address
+    
+    /// CHECK: The reported user (validated in logic)
     pub reported_user: AccountInfo<'info>,
+    
     pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
-pub struct ProcessReport<'info> {
+pub struct ReviewReport<'info> {
     #[account(mut)]
     pub report: Account<'info, ViolationReport>,
-    pub oracle: Account<'info, OracleAccount>,
-    pub authority: Signer<'info>,
+    
+    pub reviewer: Signer<'info>, // Must be authorized oracle
 }
 
 #[derive(Accounts)]
-pub struct HumanReview<'info> {
+pub struct RecordResolution<'info> {
     #[account(mut)]
     pub report: Account<'info, ViolationReport>,
-    pub oracle: Account<'info, OracleAccount>,
-    pub reviewer: Signer<'info>,
+    
+    pub authority: Signer<'info>, // Treasury program or authorized oracle
 }
 
 #[derive(Accounts)]
-pub struct ExecuteSlash<'info> {
-    #[account(mut)]
-    pub report: Account<'info, ViolationReport>,
-    #[account(mut)]
-    pub oracle: Account<'info, OracleAccount>,
-    pub executor: Signer<'info>,
+pub struct GetViolationHistory<'info> {
+    #[account(
+        seeds = [b"violations", user.key().as_ref()],
+        bump
+    )]
+    pub user_account: Account<'info, UserViolations>,
+    
+    /// CHECK: User address for PDA verification
+    pub user: AccountInfo<'info>,
 }
 
 #[derive(Accounts)]
-pub struct SubmitAppeal<'info> {
-    #[account(mut)]
+pub struct AppealReport<'info> {
+    #[account(
+        mut,
+        constraint = report.reporter == reporter.key() || 
+                    report.reported_user == reporter.key()
+    )]
     pub report: Account<'info, ViolationReport>,
-    pub appellant: Signer<'info>,
+    
+    #[account(mut)]
+    pub reporter: Signer<'info>,
 }
 
+// Violation history account
 #[account]
-pub struct OracleAccount {
-    pub authority: Pubkey,
-    pub violation_weights: Vec<ViolationWeight>,
-    pub human_reviewers: Vec<Pubkey>,
-    pub total_reports_processed: u64,
-    pub total_sol_slashed: u64,
-    pub created_at: i64,
-    pub is_active: bool,
+pub struct UserViolations {
+    pub user: Pubkey,
+    pub total_violations: u32,
+    pub high_violations: u32,
+    pub critical_violations: u32,
+    pub last_violation_at: i64,
 }
 
-impl OracleAccount {
-    pub const MAX_SIZE: usize = 32 + // authority
-        (4 + 100 * (1 + 2)) + // violation_weights vector
-        (4 + 10 * 32) + // human_reviewers (max 10)
-        8 + // total_reports
-        8 + // total_sol_slashed
-        8 + // created_at
-        1; // is_active
-}
-
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq)]
-pub struct ViolationWeight {
-    pub violation_type: ViolationType,
-    pub weight_bps: u16, // 0-10000 (0-100%)
-}
-
-#[account]
-pub struct ViolationReport {
-    pub id: u64,
-    pub match_id: String,
-    pub violation_type: ViolationType,
-    pub evidence_hash: [u8; 32],
-    pub evidence_url: String,
-    pub description: String,
-    pub reporter: Pubkey,
-    pub reported_user: Pubkey,
-    pub created_at: i64,
-    pub status: ReportStatus,
-    pub ai_confidence: u16,
-    pub recommended_slash_bps: u16,
-    pub final_slash_bps: u16,
-    pub is_appealed: bool,
-    pub human_reviewed: bool,
-    pub human_reviewer: Option<Pubkey>,
-    pub human_reviewed_at: Option<i64>,
-    pub review_notes: Option<String>,
-    pub executed: bool,
-    pub executed_at: Option<i64>,
-    pub escrow_executed: Option<Pubkey>,
-    pub oracle_processed_at: Option<i64>,
-    pub appeal_reason: Option<String>,
-    pub appeal_evidence_hash: Option<[u8; 32]>,
-    pub appealed_at: Option<i64>,
-}
-
+// Size calculation for ViolationReport
 impl ViolationReport {
-    pub const MAX_SIZE: usize = 8 + // id
-        4 + 50 + // match_id
-        1 + // violation_type
-        32 + // evidence_hash
-        4 + 200 + // evidence_url
-        4 + 1000 + // description
-        32 + // reporter
-        32 + // reported_user
-        8 + // created_at
-        1 + // status
-        2 + // ai_confidence
-        2 + // recommended_slash_bps
-        2 + // final_slash_bps
-        1 + // is_appealed
-        1 + // human_reviewed
-        33 + // human_reviewer
-        9 + // human_reviewed_at
-        5 + 200 + // review_notes
-        1 + // executed
-        9 + // executed_at
-        33 + // escrow_executed
-        9 + // oracle_processed_at
-        5 + 500 + // appeal_reason
-        33 + // appeal_evidence_hash
-        9; // appealed_at
+    pub const SIZE: usize = 
+        32 + // reporter: Pubkey
+        32 + // reported_user: Pubkey
+        64 + // match_id: String (max 64 chars)
+        1 +  // violation_type: ViolationType
+        1 +  // severity: Severity
+        32 + // evidence_hash: [u8; 32]
+        8 +  // submitted_at: i64
+        33 + // reviewed_by: Option<Pubkey>
+        1 +  // review_status: ReviewStatus
+        1 +  // slash_percentage: u8
+        8 +  // compensation_amount: u64
+        200 + // resolution: Option<Resolution> (variable)
+        100; // Padding
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq)]
-pub enum ViolationType {
-    NoShow,           // Didn't show up to meet
-    Harassment,       // Verbal or physical harassment
-    IdentityFraud,    // Fake photos/identity
-    Threats,          // Threatened violence or harm
-    Inappropriate,    // Sexual harassment/inappropriate behavior
-    Theft,            // Stole something
-    Violence,         // Physical assault
-    Other,
-}
-
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq)]
-pub enum ReportStatus {
-    PendingReview,
-    AwaitingHumanReview,
-    Approved,
-    Rejected,
-    InsufficientEvidence,
-    UnderAppeal,
-    AppealApproved,
-    AppealRejected,
-}
-
-#[event]
-pub struct ViolationReported {
-    pub report_id: u64,
-    pub match_id: String,
-    pub violation_type: ViolationType,
-    pub reporter: Pubkey,
-    pub reported_user: Pubkey,
-}
-
-#[event]
-pub struct ReportProcessed {
-    pub report_id: u64,
-    pub ai_confidence: u16,
-    pub recommended_slash_bps: u16,
-    pub status: ReportStatus,
-}
-
-#[event]
-pub struct HumanReviewCompleted {
-    pub report_id: u64,
-    pub approved: bool,
-    pub final_slash_bps: u16,
-    pub reviewer: Pubkey,
-}
-
-#[event]
-pub struct SlashExecuted {
-    pub report_id: u64,
-    pub escrow_address: Pubkey,
-    pub slash_bps: u16,
-}
-
-#[event]
-pub struct AppealSubmitted {
-    pub report_id: u64,
-    pub appealed_by: Pubkey,
-}
-
+// Error codes
 #[error_code]
-pub enum ErrorCode {
-    #[msg("Oracle is inactive")]
-    OracleInactive,
-    #[msg("Unauthorized")]
-    Unauthorized,
-    #[msg("Description too long")]
-    DescriptionTooLong,
-    #[msg("Report already processed")]
-    AlreadyProcessed,
-    #[msg("Invalid confidence value")]
-    InvalidConfidence,
-    #[msg("Invalid slash amount")]
-    InvalidSlashAmount,
-    #[msg("Unauthorized reviewer")]
-    UnauthorizedReviewer,
-    #[msg("Invalid review state")]
-    InvalidReviewState,
-    #[msg("Report not approved")]
-    NotApproved,
-    #[msg("Already executed")]
-    AlreadyExecuted,
-    #[msg("Cannot appeal this report")]
+pub enum OracleError {
+    #[msg("Invalid slash percentage (must be 0-100)")]
+    InvalidSlashPercentage,
+    
+    #[msg("Invalid compensation percentage (must be 0-100)")]
+    InvalidCompensationPercentage,
+    
+    #[msg("Report cannot be appealed in current state")]
     CannotAppeal,
-    #[msg("Already appealed")]
-    AlreadyAppealed,
 }

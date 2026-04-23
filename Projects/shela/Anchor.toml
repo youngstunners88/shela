@@ -1,0 +1,28 @@
+[features]
+seeds = false
+skip-lint = false
+
+[programs.localnet]
+shela_treasury = "Treasury11111111111111111111111111111111111"
+shela_reputation_nft = "Reput11111111111111111111111111111111111111"
+shela_slash_oracle = "Slash11111111111111111111111111111111111111"
+
+[programs.devnet]
+shela_treasury = "Treasury11111111111111111111111111111111111"
+shela_reputation_nft = "Reput11111111111111111111111111111111111111"
+shela_slash_oracle = "Slash11111111111111111111111111111111111111"
+
+[programs.mainnet]
+shela_treasury = "Treasury11111111111111111111111111111111111"
+shela_reputation_nft = "Reput11111111111111111111111111111111111111"
+shela_slash_oracle = "Slash11111111111111111111111111111111111111"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "Localnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "anchor test"

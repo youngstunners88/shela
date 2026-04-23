@@ -3,10 +3,18 @@ name = "shela-slash-oracle"
 version = "0.1.0"
 edition = "2021"
 
-[dependencies]
-anchor-lang = "0.30.0"
-anchor-spl = "0.30.0"
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "shela_slash_oracle"
 
 [features]
-devnet = []
-mainnet = []
+default = ["cpi"]
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+
+[dependencies]
+anchor-lang = { version = "0.31.0" }
+anchor-spl = { version = "0.31.0" }
