@@ -1,10 +1,10 @@
 // Shela State Machine
-// Defines valid state transitions for all 6 layers
+// Clean 5-layer architecture (01-verify through 05-learn)
+// AA stripped - using simple EOA + direct escrow
 
-export type State = 
+export type State =
   | 'signup'           // Initial state
   | 'interview'        // 01-verify: AI interview
-  | 'account_setup'    // 01.5-smart-accounts: Create AA wallet
   | 'verified'         // Interview passed, ready for matching
   | 'matching'         // 02-match: Swipe interface
   | 'matched'          // Mutual match found
@@ -17,8 +17,7 @@ export type State =
   | 'feedback'         // 05-learn: Rate + report
   | 'learning'         // AI updates models
   | 'violation'        // 03-escrow: Slash oracle
-  | 'rolled_over'      // 06-rollover: Gamified stakes
-  | 'finished';       // End state
+  | 'finished';        // End state
 
 export interface Transition {
   from: State;
@@ -30,49 +29,38 @@ export interface Transition {
 export const VALID_TRANSITIONS: Transition[] = [
   // Basic flow
   { from: 'signup', to: 'interview', trigger: 'start_interview' },
-  { from: 'interview', to: 'account_setup', trigger: 'interview_passed' },
-  { from: 'account_setup', to: 'verified', trigger: 'account_created' },
-  { from: 'account_setup', to: 'verified', trigger: 'use_eoa' }, // Skip AA
+  { from: 'interview', to: 'verified', trigger: 'interview_passed' },
   { from: 'interview', to: 'signup', trigger: 'interview_failed' },
-  
+
   // Matching flow
   { from: 'verified', to: 'matching', trigger: 'start_matching' },
   { from: 'matching', to: 'matched', trigger: 'mutual_like' },
   { from: 'matching', to: 'verified', trigger: 'pause_matching' },
-  
+
   // Escrow flow
   { from: 'matched', to: 'staking', trigger: 'propose_meet' },
   { from: 'staking', to: 'staked', trigger: 'both_staked' },
   { from: 'staking', to: 'verified', trigger: 'cancel_match' },
-  
-  // AA-based auto-staking (new)
-  { from: 'matched', to: 'staked', trigger: 'auto_staked_via_delegation' },
-  
+
   // Meet verification flow
   { from: 'staked', to: 'meet_scheduled', trigger: 'schedule_meet' },
   { from: 'meet_scheduled', to: 'check_in', trigger: 'meet_time' },
   { from: 'check_in', to: 'verified_meet', trigger: 'both_checked_in' },
   { from: 'check_in', to: 'violation', trigger: 'no_show' },
   { from: 'check_in', to: 'violation', trigger: 'false_location' },
-  
-  // Auto-release via AA (new)
-  { from: 'verified_meet', to: 'completed', trigger: 'auto_release_via_delegation' },
-  { from: 'verified_meet', to: 'completed', trigger: 'manual_release' },
-  
+
+  // Release stakes
+  { from: 'verified_meet', to: 'completed', trigger: 'release_stakes' },
+
   // Feedback and learning
   { from: 'completed', to: 'feedback', trigger: 'rate_partner' },
   { from: 'feedback', to: 'learning', trigger: 'submit_feedback' },
   { from: 'learning', to: 'verified', trigger: 'return_to_pool' },
   { from: 'learning', to: 'finished', trigger: 'final_exit' },
-  
+
   // Violation flow
   { from: 'violation', to: 'learning', trigger: 'slash_executed' },
   { from: 'violation', to: 'check_in', trigger: 'appeal_success' },
-  
-  // Rollover flow (Layer 6)
-  { from: 'feedback', to: 'rolled_over', trigger: 'both_positive' },
-  { from: 'rolled_over', to: 'staking', trigger: 'next_tier' },
-  { from: 'rolled_over', to: 'verified', trigger: 'reset' },
 ];
 
 export class ShelaStateMachine {
@@ -114,20 +102,11 @@ export class ShelaStateMachine {
     return true;
   }
 
-  // Check if user has smart account (AA path)
-  isSmartAccountPath(): boolean {
-    const hasAccountSetup = this.history.some(
-      (h) => h.state === 'account_setup'
-    );
-    return hasAccountSetup;
-  }
-
-  // Get current layer number
+  // Get current layer number (01-05)
   getCurrentLayer(): number {
     const layerMap: Record<State, number> = {
       signup: 0,
       interview: 1,
-      account_setup: 1.5,
       verified: 1,
       matching: 2,
       matched: 2,
@@ -140,7 +119,6 @@ export class ShelaStateMachine {
       feedback: 5,
       learning: 5,
       violation: 3,
-      rolled_over: 6,
       finished: 5,
     };
     return layerMap[this.state] || 0;
